@@ -1,0 +1,1122 @@
+<title>Lineage of the Vigil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Montserrat:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: sticky header, tab content, bottom nav; combat + mini-game as overlays. Single dark look (gold frames, crimson actions) by choice. */
+:root{
+  --bg:#050507; --panel:#0d0d12; --panel2:#151821; --slate:#1b2130; --gold:#d9a53a; --gold2:#f4cd5d;
+  --crim:#8c1b2b; --crim2:#ad2a3d; --parch:#dcc188; --ink:#2a1c10; --fg:#f2e9d6; --dim:#a39c8c;
+  --hp:#d9443c; --mp:#3f8cff; --st:#3fbf6a;
+  --f-logo:'Cinzel',Georgia,serif; --f-ui:'Montserrat',system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:15px/1.4 var(--f-ui);margin:0;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column;max-width:980px;margin:0 auto}
+button{font:700 .86rem var(--f-ui);color:var(--gold2);background:var(--crim);border:1.5px solid var(--gold);border-radius:9px;padding:9px 12px;cursor:pointer;min-height:42px;text-transform:uppercase;letter-spacing:.03em;box-shadow:inset 0 2px 0 rgba(255,255,255,.12)}
+button.alt{background:var(--slate);color:var(--fg)}
+button.ghost{background:transparent;color:var(--gold2)}
+button.big{font-size:1.05rem;min-height:52px}
+button:disabled{opacity:.38;cursor:default}
+button:active:not(:disabled){transform:translateY(1px)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+input,select,textarea{font:600 1rem var(--f-ui);background:var(--parch);color:var(--ink);border:1.5px solid var(--gold);border-radius:9px;padding:10px;box-sizing:border-box;width:100%;min-width:0}
+h1,h2,h3{margin:0;font-weight:800;letter-spacing:.04em}
+h2{font-size:.95rem;color:var(--gold2);text-transform:uppercase;text-align:center}
+.num{font-variant-numeric:tabular-nums}
+.dim{color:var(--dim)} .sm{font-size:.82rem}
+.logo{font-family:var(--f-logo);font-weight:800;color:var(--crim2);text-shadow:0 0 1px var(--gold),0 1px 0 #000;letter-spacing:.02em}
+
+/* header */
+#hud{padding:10px 16px 8px;border-bottom:1.5px solid var(--gold);background:var(--panel)}
+.hrow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.hrow h1{font-size:1.15rem;color:var(--gold2)}
+.cur{display:flex;gap:6px;flex-wrap:wrap}
+.cur span{font:700 .78rem var(--f-ui);border:1.5px solid var(--gold);border-radius:8px;padding:3px 8px;background:#000}
+.cur b.g{color:var(--gold2)} .cur b.m{color:#5aa8ff} .cur b.e{color:#7ee08f}
+.cc{color:var(--hp);font-weight:800}
+.bars{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.bar{height:9px;background:#000;border:1px solid #3a3326;border-radius:5px;overflow:hidden;position:relative}
+.bar i{display:block;height:100%;background:var(--hp);transition:width .2s}
+.bar.mp i{background:var(--mp)} .bar.st i{background:var(--st)} .bar.xp i{background:var(--gold)}
+.blabel{display:flex;justify-content:space-between;font-size:.72rem;color:var(--dim);font-weight:700}
+
+#view{flex:1;overflow-y:auto;padding:14px 16px 20px;min-height:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.col{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border:1.5px solid var(--gold);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card.lock{opacity:.6}
+.card .t{font-weight:800;color:var(--gold2);text-align:center}
+.card .d{font-size:.8rem;color:var(--dim);text-align:center}
+.card .meta{font-size:.75rem;font-weight:700;text-align:center}
+.btns{display:flex;gap:8px} .btns>button{flex:1}
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:.88rem;padding:3px 0;border-bottom:1px solid #1d1a14}
+.kv:last-child{border-bottom:0}
+.kv b{text-align:right}
+.parch{background:var(--parch);color:var(--ink);border-color:#a8772a}
+.parch h2{color:var(--crim)}
+.log{display:flex;flex-direction:column;gap:6px}
+.log p{margin:0;padding:6px 10px;border-left:3px solid var(--crim);background:rgba(0,0,0,.06);font-size:.88rem;border-radius:4px}
+.log p:first-child{border-left-color:#2c6fd6}
+.pill{display:inline-block;font:700 .7rem var(--f-ui);padding:2px 7px;border:1px solid currentColor;border-radius:10px}
+.stages{list-style:none;margin:0;padding:0;font-size:.85rem}
+.stages li{padding:3px 0;color:var(--dim)} .stages li.on{color:var(--gold2)}
+
+/* nav */
+#nav{display:flex;overflow-x:auto;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:var(--panel);border-top:1.5px solid var(--gold)}
+#nav button{flex:1 0 auto;min-width:84px;background:var(--slate);color:var(--fg);font-size:.78rem}
+#nav button.on{background:var(--crim);color:var(--gold2)}
+
+/* creation */
+.ctabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ctabs button{background:var(--slate);color:var(--fg);font-size:.78rem;padding:8px 4px}
+.ctabs button.on{background:var(--crim);color:var(--gold2)}
+.fate{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.fate{grid-template-columns:1fr}}
+.roll{text-align:center}
+.roll .rn{font-size:1.9rem;font-weight:800;color:var(--fg)}
+.roll .rr{font-weight:800;letter-spacing:.08em}
+.roll ul{text-align:left;margin:6px 0 0;padding-left:18px;font-size:.88rem}
+.summary{background:var(--parch);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:.88rem;border:1.5px solid #a8772a}
+.summary b{color:var(--crim)}
+.flash{animation:fl .5s}
+@keyframes fl{0%{transform:scale(.92);opacity:.3}100%{transform:none;opacity:1}}
+
+/* overlays */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.ov .box{background:var(--panel);border:2px solid var(--gold);border-radius:14px;padding:16px;max-width:560px;width:100%;max-height:92%;overflow-y:auto;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.ov .box h2{font-size:1.15rem}
+.odds{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-weight:800;font-size:.82rem}
+.odds div{display:flex;justify-content:space-between}
+
+/* combat */
+.unit{background:var(--panel2);border:1.5px solid var(--gold);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.unit .nm{display:flex;justify-content:space-between;font-weight:800;gap:8px}
+.intent{font-weight:800;font-size:.85rem;padding:5px 9px;border-radius:7px;background:#000;border:1px solid var(--gold);text-align:center}
+.intent.warn{border-color:var(--hp);color:#ff8a7a}
+.chips{display:flex;gap:4px;flex-wrap:wrap;min-height:18px}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.acts button{font-size:.72rem;padding:6px 4px;min-height:48px;line-height:1.15}
+.acts button small{display:block;font-weight:600;color:var(--fg);opacity:.8;text-transform:none;font-size:.68rem}
+.acts button.sk{background:#2a1450}
+.clog{background:var(--parch);color:var(--ink);border-radius:10px;padding:8px 10px;font-size:.84rem;display:flex;flex-direction:column;gap:3px;max-height:150px;overflow-y:auto}
+.clog p{margin:0} .clog p:first-child{font-weight:700}
+
+/* mini-games */
+.meter{position:relative;height:38px;background:#000;border:1.5px solid var(--gold);border-radius:8px;overflow:hidden}
+.zone{position:absolute;top:0;bottom:0;background:rgba(63,191,106,.35)}
+.zone.p{background:rgba(244,205,93,.65)}
+.pip{position:absolute;top:0;bottom:0;width:5px;margin-left:-2px;background:#fff;box-shadow:0 0 8px #fff}
+.mgbig{font-size:1.6rem;font-weight:800;text-align:center;color:var(--gold2);min-height:2.2rem}
+.syms{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.syms button{font-size:1.5rem;min-height:56px}
+.grade{font:800 3.2rem var(--f-logo);text-align:center}
+.toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--crim);border:1.5px solid var(--gold);color:var(--gold2);font-weight:700;padding:8px 14px;border-radius:10px;z-index:30;max-width:90%;font-size:.85rem;text-align:center}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #1d1a14}
+.toggle span{font-size:.86rem} .toggle small{display:block;color:var(--dim);font-size:.75rem}
+.toggle button{min-width:72px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<div id="app">
+  <header id="hud"></header>
+  <main id="view"></main>
+  <nav id="nav"></nav>
+</div>
+<div id="ov" class="ov" hidden></div>
+<div id="toast" class="toast" hidden></div>
+<script>
+/* ===== FATE DATA ===== */
+const RAR=[
+  {n:'Common',w:45,c:'#d9d4c7'},{n:'Uncommon',w:25,c:'#57d27a'},{n:'Rare',w:14,c:'#4ea6ff'},{n:'Epic',w:7,c:'#b678ff'},
+  {n:'Legendary',w:4.5,c:'#ffb340'},{n:'Mythic',w:2.7,c:'#ff4f8b'},{n:'Divine',w:1.6,c:'#fff0a0'},{n:'Secret',w:.2,c:'#ff3030'}
+];
+const STK=['str','spd','dur','vit','mag','ctl','spr','int'];
+const STN={str:'Strength',spd:'Speed',dur:'Durability',vit:'Health',mag:'Magic',ctl:'Magic Control',spr:'Spirit',int:'Intelligence'};
+const XN={learn:'training gains',gold:'gold earned',crit:'critical chance',all:'all stats'};
+
+const RACES=[
+ {id:'human',n:'Human',r:0,d:'Adaptable and driven. Learns faster than anyone.',m:{learn:.15,gold:.1},st:'Grit|Quick Study|Battle Sense|Iron Will|Awakened Potential|Hero\'s Resolve|Paragon of Man'},
+ {id:'stonebred',n:'Stonebred',r:1,d:'Towering mountain clans built like cliffs.',m:{str:.35,vit:.35,dur:.3,spd:-.15},st:'Enhanced Strength|Stone Skin|Earth Shaping|War Chant|Mountain Heart|Titan Mastery|Mountain King Candidate'},
+ {id:'tidefolk',n:'Tidefolk',r:1,d:'Sea-born folk with calm, deep minds.',m:{vit:.2,ctl:.25,spr:.15},st:'Gill Breath|Current Sense|Tide Calling|Deep Pressure|Pearl Heart|Maelstrom|Tide Sovereign'},
+ {id:'skyborn',n:'Skyborn',r:2,d:'Cloud-city people, light and swift.',m:{spd:.4,int:.2,dur:-.1},st:'Feather Step|Wind Reading|Glide|Updraft|Storm Eyes|Sky Dancer|Herald of the Winds'},
+ {id:'sylvan',n:'Sylvan',r:2,d:'Forest-born fae steeped in old magic.',m:{mag:.35,spd:.2,spr:.15,str:-.2},st:'Leafsong|Bloom|Grove Bond|Wild Growth|Ancient Bark|Heartwood|Sylvan Monarch'},
+ {id:'ashborn',n:'Ashborn',r:3,d:'Born of ember and shadow. Hungry for battle.',m:{str:.3,mag:.3,vit:.15,spr:-.1},st:'Ember Blood|Dark Flame|Hellish Regrowth|Crimson Horns|Twin Hearts|Inferno Core|Ash Lord'},
+ {id:'lumen',n:'Lumen',r:4,d:'Radiant beings descended from the high heavens.',m:{mag:.35,spr:.4,ctl:.2},st:'Halo|Radiant Wings|Purifying Light|Sanctuary|Celestial Song|Seraph Form|Archon'},
+ {id:'dragonkin',n:'Dragonkin',r:5,d:'Scaled descendants of the old wyrms.',m:{str:.4,dur:.4,vit:.3,mag:.25},st:'Scales|Fire Lungs|Wyrm Eyes|Wings|Dragon Heart|Ancient Roar|Elder Wyrm'},
+ {id:'starforged',n:'Starforged',r:6,d:'Shaped from fallen starlight.',m:{all:.45},st:'Spark|Constellation|Nova Pulse|Gravity Core|Supernova|Celestial Body|Living Star'},
+ {id:'voidtouched',n:'Voidtouched',r:7,d:'Something from beyond answered when you were born.',m:{all:.7,learn:.2},st:'Hollow|Unseen|Void Step|Unmaking|Null Heart|Reality Tear|Beyond'}
+];
+const BLOODS=[
+ {id:'common',n:'Common Line',r:0,d:'An ordinary family with nothing to live up to.',m:{learn:.05}},
+ {id:'farm',n:'Farmhand Line',r:0,d:'Generations of hard labour.',m:{vit:.1,str:.05}},
+ {id:'hunter',n:'Hunter Line',r:1,d:'Trackers and archers of the deep woods.',m:{spd:.15,int:.08}},
+ {id:'soldier',n:'Soldier Line',r:1,d:'A family of footsoldiers.',m:{str:.12,dur:.12}},
+ {id:'scholar',n:'Scholar Line',r:1,d:'Keepers of old libraries.',m:{int:.2,ctl:.08}},
+ {id:'knight',n:'Knight Lineage',r:2,d:'Sworn knights for five generations.',m:{str:.15,dur:.15,vit:.1}},
+ {id:'mage',n:'Court Mage Lineage',r:2,d:'A line of court mages.',m:{mag:.2,ctl:.15}},
+ {id:'royal',n:'Royal Blood',r:3,d:'Distant royal blood and the wealth that comes with it.',m:{all:.12,gold:.3}},
+ {id:'champion',n:'Champion\'s Blood',r:4,d:'Descended from a legendary champion.',m:{str:.25,spd:.2,dur:.2,vit:.2}},
+ {id:'archmage',n:'Archmage Line',r:4,d:'Heirs of a famous archmage.',m:{mag:.3,ctl:.3,spr:.15}},
+ {id:'ancient',n:'Ancient Blood',r:5,d:'Blood older than the kingdoms.',m:{all:.25}},
+ {id:'divine',n:'Godtouched Blood',r:6,d:'Marked by a forgotten god.',m:{all:.35,learn:.15}},
+ {id:'primordial',n:'Primordial Blood',r:7,d:'The first blood. Nothing else compares.',m:{all:.55,learn:.25}}
+];
+/* skills: [name, mana, power, effect] — effects: burn stun shield heal drain pierce multi weaken evade counter */
+const MAGICS=[
+ {id:'flame',n:'Flame',r:0,d:'Conjure and hurl fire.',sk:[['Fireball',15,1.3,''],['Flame Wall',20,.8,'shield'],['Blazing Lance',35,2.4,'burn']]},
+ {id:'frost',n:'Frost',r:0,d:'Freeze water out of the air.',sk:[['Ice Shard',14,1.2,''],['Frozen Hold',25,.9,'stun'],['Glacier Spike',38,2.5,'pierce']]},
+ {id:'wind',n:'Wind',r:0,d:'Command the breeze.',sk:[['Gale Cut',12,1.1,'multi'],['Tailwind',18,0,'evade'],['Cyclone',36,2.3,'multi']]},
+ {id:'earth',n:'Earth',r:0,d:'Shape stone and soil.',sk:[['Rock Throw',14,1.25,''],['Stone Armor',22,.7,'shield'],['Landslide',40,2.6,'stun']]},
+ {id:'spark',n:'Lightning',r:0,d:'Snap sparks between your fingers.',sk:[['Spark Bolt',13,1.3,''],['Static Field',22,1,'weaken'],['Thunderclap',38,2.5,'stun']]},
+ {id:'nature',n:'Nature',r:0,d:'Make plants grow on command.',sk:[['Thorn Lash',13,1.2,''],['Regrowth',24,1.3,'heal'],['Strangling Roots',36,2.2,'weaken']]},
+ {id:'shadow',n:'Shadow',r:1,d:'Move and strike through living darkness.',sk:[['Shade Strike',15,1.4,'pierce'],['Shadow Veil',20,0,'evade'],['Binding Dark',40,2.6,'stun']]},
+ {id:'water',n:'Water',r:1,d:'Bend rivers and rain.',sk:[['Water Whip',14,1.3,''],['Healing Tide',26,1.5,'heal'],['Tidal Crush',40,2.7,'']]},
+ {id:'iron',n:'Iron',r:1,d:'Harden and shape metal.',sk:[['Iron Fist',15,1.5,''],['Steel Skin',22,1,'shield'],['Blade Storm',42,2.6,'multi']]},
+ {id:'sound',n:'Sound',r:1,d:'Turn noise into force.',sk:[['Sonic Pulse',14,1.3,''],['Discord',22,1,'weaken'],['Shatter Note',40,2.8,'pierce']]},
+ {id:'light',n:'Healing Light',r:1,d:'A gentle light that mends wounds.',sk:[['Light Mote',13,1.2,''],['Mend',25,1.8,'heal'],['Radiant Burst',40,2.5,'']]},
+ {id:'blood',n:'Blood',r:2,d:'Command the life within veins.',sk:[['Blood Needle',16,1.5,'drain'],['Crimson Pact',22,1.2,'drain'],['Hemorrhage',45,3,'burn']]},
+ {id:'gravity',n:'Gravity',r:2,d:'Make things crushingly heavy.',sk:[['Crush',18,1.6,''],['Weightless',20,0,'evade'],['Collapse',48,3.1,'stun']]},
+ {id:'illusion',n:'Illusion',r:2,d:'Bend what others see.',sk:[['Phantom',16,1.4,''],['Mirror Image',22,0,'evade'],['Nightmare',45,2.9,'weaken']]},
+ {id:'storm',n:'Storm',r:2,d:'Rain, wind and thunder at once.',sk:[['Storm Bolt',18,1.6,''],['Squall',26,1.4,'multi'],['Tempest',50,3.2,'stun']]},
+ {id:'solar',n:'Solar Flame',r:3,d:'A fire as bright as noon.',sk:[['Sunray',20,1.8,'burn'],['Noon Shield',26,1.5,'shield'],['Solar Flare',55,3.6,'burn']]},
+ {id:'blackice',n:'Black Ice',r:3,d:'Cold so deep it burns.',sk:[['Black Shard',20,1.8,'pierce'],['Frostbite',28,1.6,'weaken'],['Absolute Zero',55,3.5,'stun']]},
+ {id:'reversal',n:'Reversal',r:4,d:'Turn an enemy\'s force back on them.',sk:[['Deflect',20,0,'counter'],['Rebound',28,2.1,''],['Perfect Return',60,4,'pierce']]},
+ {id:'starfall',n:'Starfall',r:4,d:'Pull meteors from the sky.',sk:[['Meteor',24,2.1,''],['Star Shield',30,2,'shield'],['Starfall',65,4.2,'multi']]},
+ {id:'eclipse',n:'Eclipse',r:5,d:'Swallow light itself.',sk:[['Umbra',26,2.3,'drain'],['Corona',34,2,'burn'],['Total Eclipse',70,4.6,'stun']]},
+ {id:'dragon',n:'Dragon Breath',r:5,d:'Breathe the fire of wyrms.',sk:[['Breath',26,2.4,'burn'],['Wyrm Scales',32,2.2,'shield'],['Cataclysm',72,4.8,'pierce']]},
+ {id:'creation',n:'Creation',r:6,d:'Make anything from nothing.',sk:[['Forge Weapon',28,2.6,''],['Make Wall',34,2.6,'shield'],['Genesis',80,5.4,'drain']]},
+ {id:'judgment',n:'Judgment',r:6,d:'A divine verdict on the guilty.',sk:[['Verdict',30,2.7,'pierce'],['Sanctify',36,2.4,'heal'],['Final Judgment',85,5.6,'stun']]},
+ {id:'oblivion',n:'Oblivion',r:7,d:'Erase things from existence.',sk:[['Unmake',32,3.2,'pierce'],['Null Field',40,3,'weaken'],['Erasure',90,7,'pierce']]}
+];
+const SK_UNLOCK=[1,4,10];
+const EFFN={burn:'Burns for 3 turns',stun:'Stuns the enemy',shield:'Creates a shield',heal:'Heals you',drain:'Heals 40% of damage dealt',pierce:'Ignores most defence',multi:'Hits 3 times',weaken:'Enemy deals 35% less for 3 turns',evade:'Next enemy attack very likely to miss',counter:'Reflects the next physical attack'};
+const TRAITS=[
+ {id:'intelligent',n:'Intelligent',r:0,d:'You absorb knowledge with ease.',m:{int:.12,learn:.1,ctl:.05}},
+ {id:'strong',n:'Strong',r:0,d:'Naturally powerful muscles.',m:{str:.12}},
+ {id:'swift',n:'Swift',r:0,d:'Quick on your feet.',m:{spd:.12}},
+ {id:'tough',n:'Tough',r:0,d:'Hard to put down.',m:{dur:.12,vit:.05}},
+ {id:'calm',n:'Calm',r:0,d:'Steady breathing, steady magic.',m:{ctl:.12,spr:.05}},
+ {id:'worker',n:'Hard Worker',r:1,d:'You never skip a session.',m:{learn:.2}},
+ {id:'gifted',n:'Gifted',r:1,d:'Magic comes easily to you.',m:{mag:.15,ctl:.05}},
+ {id:'lucky',n:'Lucky',r:1,d:'Coins and openings find you.',m:{gold:.25,crit:.05}},
+ {id:'hot',n:'Hot-Blooded',r:1,d:'You fight with fire in your chest.',m:{str:.12,mag:.08}},
+ {id:'prodigy',n:'Prodigy',r:2,d:'You learn in days what takes others years.',m:{learn:.3}},
+ {id:'warborn',n:'Warborn',r:2,d:'Born for the battlefield.',m:{str:.15,dur:.15,spd:.08}},
+ {id:'ironmind',n:'Iron Mind',r:2,d:'Your focus never breaks.',m:{spr:.2,int:.15}},
+ {id:'genius',n:'Genius',r:3,d:'A once-in-a-generation mind.',m:{int:.3,learn:.25,ctl:.1}},
+ {id:'berserker',n:'Berserker',r:3,d:'Pain only makes you hit harder.',m:{str:.3,vit:.1,dur:-.1,crit:.05}},
+ {id:'chosen',n:'Chosen',r:4,d:'Fate itself leans your way.',m:{all:.15,learn:.2}},
+ {id:'unbreakable',n:'Unbreakable',r:4,d:'Nothing has ever broken you.',m:{dur:.4,vit:.3}},
+ {id:'monster',n:'Monster',r:5,d:'Others whisper that you are not human.',m:{str:.35,vit:.35,dur:.25,spd:.15}},
+ {id:'ascendant',n:'Ascendant',r:6,d:'Your ceiling keeps rising.',m:{all:.3,learn:.3}},
+ {id:'anomaly',n:'Anomaly',r:7,d:'You should not exist.',m:{all:.5,learn:.5,crit:.1}}
+];
+const BACKS=[
+ {id:'noble',n:'Noble Heir',d:'Raised by tutors and court mages. Strong magical fundamentals, but less hardened by hardship.',raw:{mag:8,ctl:8,int:6,dur:-3},gold:400},
+ {id:'slums',n:'Slums Survivor',d:'A hard childhood built strength, speed, durability and fierce resilience.',raw:{str:7,spd:7,dur:7,vit:4},gold:0},
+ {id:'knight',n:'Knight Household',d:'Discipline and sparring shaped a balanced warrior. Starts with an Iron Sword.',raw:{str:5,dur:5,vit:5,spd:3,spr:3},gold:100,wpn:'iron'},
+ {id:'scholar',n:'Wandering Scholar',d:'Travel, books and observation sharpened magic, spirit and intelligence.',raw:{mag:6,spr:7,int:8},gold:120}
+];
+const CATS=[['race','Race',RACES],['bl','Bloodline',BLOODS],['mag','Magic',MAGICS],['trait','Trait',TRAITS]];
+const FIRST=['Aldric','Brenna','Cael','Dara','Eamon','Fenna','Gareth','Halric','Isolde','Joren','Kestra','Lysa','Maren','Nolan','Orin','Perrin','Rhea','Soren','Talia','Ulric','Vessa','Wren','Yara','Zeph','Mira','Torin','Elka','Bram','Ione','Miles','Kael','Sable'];
+/* ===== PROGRESSION DATA ===== */
+const TRAIN=[
+ {id:'boulder',n:'Boulder Breaker',st:'str',g:'timing',d:'Strike when the marker enters the perfect zone. Three swings, each faster.'},
+ {id:'dash',n:'Dash Course',st:'spd',g:'react',d:'Read each obstacle and react with Dodge, Jump, Slide or Dash in time.'},
+ {id:'brace',n:'Endurance Training',st:'dur',g:'brace',d:'Brace at the right moment against increasingly fast blows.'},
+ {id:'run',n:'Endurance Run',st:'vit',g:'pace',d:'Tap to hold your pace in the green zone. Too slow or too fast wastes the run.'},
+ {id:'charge',n:'Power Charge',st:'mag',g:'mash',d:'Press CHARGE as fast as you can for six seconds to force your magic past its limit.'},
+ {id:'balance',n:'Energy Balance',st:'ctl',g:'balance',d:'Keep your magic inside a moving control zone. Also raises magic mastery.'},
+ {id:'meditate',n:'Meditation',st:'spr',g:'breath',d:'Tap at the top of each breath. Slow, steady and precise.'},
+ {id:'memory',n:'Memory Training',st:'int',g:'memory',d:'Memorize the symbols, then tap them back in order as the sequence grows.'}
+];
+const TIERN=['Wood','Stone','Iron','Steel','Mithril','Enchanted'];
+const TIERC=[0,80,400,2000,9000,40000];
+const TIERM=[1,1.6,2.5,3.8,5.6,8];
+const GRADES=[['S',.93,1.5,6,'#ffd85c'],['A',.78,1.2,4,'#57d27a'],['B',.58,1,3,'#4ea6ff'],['C',.38,.7,2,'#d9d4c7'],['D',0,.4,1,'#ff6b5c']];
+
+const RANKS=[
+ {n:'Unsworn',cc:0,sal:0},{n:'Squire',cc:35,sal:.4},{n:'Oathknight',cc:80,sal:1.2},{n:'Banner Captain',cc:150,sal:3},
+ {n:'Warden Commander',cc:270,sal:8},{n:'Paragon',cc:460,sal:20},{n:'Grand Paragon',cc:800,sal:50}
+];
+/* enemy archetypes: stat shape + intent weights */
+const ARCH={
+ brute:{hp:1,str:1.15,mag:.6,dur:1,spd:.8,i:{strike:4,heavy:3,charge:1}},
+ caster:{hp:.85,str:.6,mag:1.25,dur:.8,spd:1,i:{spell:5,strike:2,guard:1}},
+ swift:{hp:.8,str:.95,mag:.6,dur:.7,spd:1.4,i:{strike:4,flurry:3}},
+ tank:{hp:1.3,str:.9,mag:.6,dur:1.25,spd:.7,i:{strike:3,guard:3,heavy:2}},
+ duel:{hp:1,str:1,mag:1,dur:1,spd:1,i:{strike:3,heavy:2,spell:2,guard:1,charge:1}}
+};
+const INTN={strike:'Strike',heavy:'Heavy blow',spell:'Spell',flurry:'Flurry (3 hits)',guard:'Guard',charge:'Gathering power',unleash:'UNLEASH',heal:'Heal',drain:'Life drain'};
+const INTW={heavy:1,charge:1,unleash:1,spell:1,flurry:1};
+const REGIONS=[
+ {id:'wood',n:'Whisperwood',rank:0,cc:20,f:[['Thicket Wolf','swift'],['Moss Goblin','brute'],['Bramble Imp','caster'],['Hollow Stag','tank']]},
+ {id:'mines',n:'Ashen Mines',rank:1,cc:50,f:[['Slag Crawler','tank'],['Cave Bat Swarm','swift'],['Cinder Golem','brute'],['Pit Shaman','caster']]},
+ {id:'crypt',n:'Drowned Crypt',rank:2,cc:100,f:[['Drowned Knight','tank'],['Bone Eel','swift'],['Grave Matron','caster'],['Salt Ghoul','brute']]},
+ {id:'spires',n:'Skyward Spires',rank:3,cc:190,f:[['Storm Harpy','swift'],['Spire Sentinel','tank'],['Wind Priest','caster'],['Thunder Roc','brute']]},
+ {id:'void',n:'The Voidmarch',rank:4,cc:330,f:[['Rift Hound','swift'],['Husk of Nothing','tank'],['Void Seer','caster'],['Null Brute','brute']]},
+ {id:'rift',n:'Starfall Rift',rank:5,cc:560,f:[['Star Wraith','caster'],['Comet Beast','brute'],['Shard Knight','tank'],['Nova Sprite','swift']]},
+ {id:'abyss',n:'The Last Abyss',rank:6,cc:950,f:[['Abyssal Titan','brute'],['Hollow Choir','caster'],['Endless Maw','tank'],['Shade Duelist','swift']]}
+];
+const BOSSES=[
+ {id:'matriarch',n:'Bramble Matriarch',cc:45,hp:1.7,a:'caster',i:{strike:3,spell:3,heal:1,heavy:1},d:'Mother of the Whisperwood thickets.',title:'Thornbreaker'},
+ {id:'golemking',n:'Cinder Golem King',cc:100,hp:1.8,a:'tank',i:{heavy:3,charge:2,guard:2,strike:2},d:'A furnace given a crown.',title:'Kingsmelter'},
+ {id:'captain',n:'The Drowned Captain',cc:180,hp:1.8,a:'duel',i:{strike:3,heavy:2,drain:2,guard:1},d:'He still commands a crew of corpses.',title:'Tidebreaker'},
+ {id:'roc',n:'Storm Roc Empress',cc:300,hp:2.8,a:'swift',i:{flurry:3,spell:2,charge:1,strike:2},d:'Her wings carry the thunder.',title:'Skyfeller'},
+ {id:'regent',n:'The Pale Regent',cc:480,hp:2.7,a:'caster',i:{spell:3,drain:2,guard:1,charge:1},d:'Ruler of the Voidmarch\'s silent court.',title:'Regicide'},
+ {id:'stareater',n:'Star-eater',cc:780,hp:3,a:'brute',i:{heavy:3,charge:2,strike:2,heal:1},d:'It swallowed three constellations.',title:'Starsaver'},
+ {id:'paragon',n:'The Fallen Paragon',cc:1250,hp:3.3,a:'duel',i:{strike:3,heavy:2,spell:2,charge:1,heal:1},d:'Once the greatest of the Vigil.',title:'Oathkeeper'},
+ {id:'herald',n:'Herald of Oblivion',cc:2000,hp:3.8,a:'caster',i:{spell:3,drain:2,charge:2,heavy:1},d:'The end of all things, wearing a mask.',title:'Last Light'}
+];
+const GEAR=[
+ {id:'iron',n:'Iron Sword',s:'w',b:.10,c:120},{id:'longsword',n:'Knight\'s Longsword',s:'w',b:.22,c:700},
+ {id:'hammer',n:'Warhammer',s:'w',b:.35,c:3000},{id:'spear',n:'Runed Spear',s:'w',b:.5,c:10000},
+ {id:'wyrm',n:'Wyrmbone Blade',s:'w',b:.75,c:40000},{id:'starmetal',n:'Starmetal Greatsword',s:'w',b:1.1,c:150000},
+ {id:'wand',n:'Apprentice Wand',s:'f',b:.12,c:150},{id:'orb',n:'Crystal Orb',s:'f',b:.25,c:900},
+ {id:'runestaff',n:'Rune Staff',s:'f',b:.4,c:4000},{id:'archstaff',n:'Archmage Staff',s:'f',b:.6,c:15000},
+ {id:'codex',n:'Star Codex',s:'f',b:.9,c:60000}
+];
+const LEGACY=[
+ {id:'talent',n:'Inherited Talent',d:'+10% training gains per level',c:15,max:50},
+ {id:'coin',n:'Old Coin',d:'+15% gold per level',c:10,max:30},
+ {id:'head',n:'Head Start',d:'+4 to every starting stat per level',c:12,max:25},
+ {id:'reserve',n:'Deep Reserves',d:'+2 max energy and +10% energy regen per level',c:20,max:15},
+ {id:'favor',n:'Fate\'s Favor',d:'+2 free spins per category per life',c:15,max:10},
+ {id:'memory',n:'Battle Memory',d:'+15% race and magic XP per level',c:15,max:30}
+];
+const ASSISTS=[
+ ['auto','Auto training','Skip mini-games and complete training at Grade A.'],
+ ['train2','2x training','Doubles stat gains, mastery and race XP from training.'],
+ ['gold2','2x gold','Doubles gold from fights, work and salary.'],
+ ['speed','Time skip','Energy, recovery and passive drills run 5x faster.'],
+ ['god','God mode','You take no damage in combat.'],
+ ['spins','Unlimited fate spins','Rolling fate costs nothing.']
+];
+const RACE_XP=[60,200,500,1200,2800,6000,12000];
+const MERIT_CODEX=[1,2,4,8,15,30,60,150];
+const EXACT_COST=[5,10,20,40,80,150,300];
+
+/* jobs: base pay, stat, pay per stat point, requirement */
+const JOBS=[
+ {id:'stable',n:'Stablehand',st:'str',b:10,k:.5,req:0,rank:0,d:'Muck stalls and haul feed for the town stables.'},
+ {id:'courier',n:'Courier',st:'spd',b:14,k:.6,req:20,rank:0,d:'Run letters and parcels between villages.'},
+ {id:'scribe',n:'Scribe',st:'int',b:16,k:.7,req:30,rank:0,d:'Copy contracts and old scrolls for the guild hall.'},
+ {id:'guard',n:'Caravan Guard',st:'dur',b:30,k:.8,req:45,rank:1,d:'Escort merchant wagons through the Whisperwood.'},
+ {id:'apoth',n:'Apothecary Assistant',st:'ctl',b:45,k:.9,req:70,rank:1,d:'Brew remedies. Sometimes you get to keep a Healing Draught.'},
+ {id:'tutor',n:'Arcane Tutor',st:'mag',b:70,k:1,req:110,rank:2,d:'Teach noble children their first spells.'},
+ {id:'chaplain',n:'Vigil Chaplain',st:'spr',b:110,k:1.05,req:170,rank:2,d:'Lead the knights in prayer and keep their spirits steady.'},
+ {id:'instructor',n:'Vigil Instructor',st:'str',b:150,k:1.1,req:220,rank:3,d:'Drill new squires in the training yard.'},
+ {id:'bodyguard',n:'Royal Bodyguard',st:'dur',b:260,k:1.2,req:330,rank:4,d:'Stand between nobility and every blade aimed at them.'},
+ {id:'archmage',n:'Court Archmage',st:'mag',b:450,k:1.4,req:520,rank:5,d:'Advise the crown on matters of magic and war.'}
+];
+const JOBLV=[0,10,25,50,100,200];
+const JOBT=['Trainee','Regular','Skilled','Senior','Master','Legend'];
+/* ===== CORE ===== */
+const KEY='vigil_save_v3';
+let S,C=null,MG=null,tab='you',ctab='race';
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmt=n=>{n=Math.floor(n);if(Math.abs(n)<1e4)return String(n);const u=['','K','M','B','T'];let i=0,v=n;while(Math.abs(v)>=1000&&i<4){v/=1000;i++}return v.toFixed(v<100?1:0)+u[i]};
+const byId=(list,id)=>list.find(x=>x.id===id);
+const A=()=>S.assist;
+
+function freshSave(){
+  S={v:3,merit:50,lp:{},codex:{race:{},bl:{},mag:{},trait:{}},assist:{},hall:[],lives:0,phase:'create',fate:null,P:null,last:Date.now()};
+  newFate();
+}
+/* ---- fate rolling ---- */
+function rollRarity(){let t=0,r=Math.random()*100;for(let i=0;i<RAR.length;i++){t+=RAR[i].w;if(r<t)return i}return 0}
+function rollFrom(list){
+  let r=rollRarity(),pool;
+  while(r>=0&&!(pool=list.filter(x=>x.r===r)).length)r--;
+  return pick(pool).id;
+}
+function freeSpins(){return 10+(S.lp.favor||0)*2}
+function newFate(){
+  const f={name:pick(FIRST),spins:{},back:null};
+  CATS.forEach(([k,,list])=>{f[k]=rollFrom(list);f.spins[k]=freeSpins();discover(k,f[k],true)});
+  S.fate=f;S.phase='create';
+}
+function discover(k,id,quiet){
+  if(S.codex[k][id])return 0;
+  S.codex[k][id]=1;
+  const list=CATS.find(c=>c[0]===k)[2],it=byId(list,id),m=MERIT_CODEX[it.r];
+  S.merit+=m;
+  if(!quiet)toast(`Codex discovery: ${it.n} (+${m} Merit)`);
+  return m;
+}
+function spinCost(k){if(A().spins)return 0;return S.fate.spins[k]>0?0:25}
+function spin(k){
+  const c=spinCost(k);
+  if(c&&S.merit<c)return false;
+  if(!A().spins){if(S.fate.spins[k]>0)S.fate.spins[k]--;else S.merit-=c}
+  const list=CATS.find(x=>x[0]===k)[2];
+  S.fate[k]=rollFrom(list);discover(k,S.fate[k]);
+  const it=byId(list,S.fate[k]);
+  if(it.r>=4)toast(`${RAR[it.r].n}! ${it.n}`);
+  return true;
+}
+function chooseExact(k,id){
+  const list=CATS.find(x=>x[0]===k)[2],it=byId(list,id),c=EXACT_COST[it.r];
+  if(it.r>=7||S.merit<c)return;
+  S.merit-=c;S.fate[k]=id;discover(k,id);
+}
+/* ---- life ---- */
+function beginLife(backId){
+  const f=S.fate,b=byId(BACKS,backId),head=(S.lp.head||0)*4;
+  const raw={};STK.forEach(k=>raw[k]=10+head+(b.raw[k]||0));
+  S.P={name:f.name||'Nameless',race:f.race,bl:f.bl,mag:f.mag,trait:f.trait,back:backId,raw,
+    mast:{},tier:{},mxp:0,mlv:1,rxp:0,rank:0,gold:b.gold,energy:10,ectr:0,drill:'str',
+    wpn:b.wpn||null,foc:null,owned:b.wpn?[b.wpn]:[],pot:{hp:2,mp:1},jobs:{},bosses:{},titles:[],streak:{},wins:0,log:[],hp:-1,mp:-1};
+  S.lives++;S.phase='play';tab='you';
+  const P=S.P;P.hp=maxHp();P.mp=maxMp();P.energy=maxEnergy();
+  say(`${P.name} begins life as a ${race().n} of the ${bl().n}, wielding ${magic().n} magic.`);
+  say(`Backstory: ${b.n}. Trait: ${trait().n}.`);
+  save();
+}
+const race=()=>byId(RACES,S.P.race),bl=()=>byId(BLOODS,S.P.bl),magic=()=>byId(MAGICS,S.P.mag),trait=()=>byId(TRAITS,S.P.trait);
+function say(t){const P=S.P;P.log.unshift(t);if(P.log.length>50)P.log.length=50}
+
+/* ---- derived stats ---- */
+function raceStage(){let s=0;RACE_XP.forEach(x=>{if(S.P.rxp>=x)s++});return s}
+function bonusOf(src,k){return (src.m[k]||0)+(STK.includes(k)?(src.m.all||0):0)}
+function mult(k){
+  const P=S.P,r=race(),st=raceStage();
+  let m=1;[r,bl(),trait()].forEach(s=>m*=1+bonusOf(s,k));
+  const primary=(r.m[k]||0)>0||r.m.all>0||r.id==='human';
+  m*=1+st*(.04+(primary?.06:0));
+  m*=1+P.rank*.05;
+  return Math.max(.2,m);
+}
+function eff(k){return S.P.raw[k]*mult(k)}
+function effAll(){const o={};STK.forEach(k=>o[k]=eff(k));return o}
+function xb(k){const P=S.P;return [race(),bl(),trait()].reduce((a,s)=>a+(s.m[k]||0),0)}
+function learnMult(){return (1+xb('learn'))*(1+(S.lp.talent||0)*.1)*(A().train2?2:1)}
+function goldMult(){return (1+xb('gold'))*(1+(S.lp.coin||0)*.15)*(A().gold2?2:1)}
+function xpMult(){return 1+(S.lp.memory||0)*.15}
+const gearB=s=>{const id=s==='w'?S.P.wpn:S.P.foc;const g=id&&byId(GEAR,id);return g?g.b:0};
+function awaken(){const l=S.P.mlv;return 1+(l>=20?.4:0)+(l>=35?.4:0)}
+function maxHp(e){e=e||effAll();return Math.round(80+e.vit*6+e.dur*2)}
+function maxMp(e){e=e||effAll();return Math.round(40+e.mag+e.spr*1.5)}
+function maxSt(e){e=e||effAll();return Math.round(60+e.spd*.5+e.vit*.5)}
+function physA(e){e=e||effAll();return (5+e.str)*(1+gearB('w'))}
+function magA(e){e=e||effAll();return (5+e.mag*.9+e.ctl*.4)*(1+gearB('f'))*awaken()}
+function critC(){return .05+xb('crit')+.15*eff('int')/(eff('int')+30)}
+function combatClass(){
+  const e=effAll(),base=STK.reduce((a,k)=>a+e[k],0)/4;
+  return Math.round(base*(1+gearB('w')*.25+gearB('f')*.25)+S.P.mlv*1.5);
+}
+function maxEnergy(){return 10+(S.lp.reserve||0)*2}
+function energySec(){return 15/((1+(S.lp.reserve||0)*.1)*(A().speed?5:1))}
+function useEnergy(n){if(S.P.energy<n){toast(`Not enough energy. ${n} needed.`);return false}S.P.energy-=n;return true}
+function mxpNeed(){return Math.round(15*Math.pow(S.P.mlv,1.6))}
+function addMxp(x){const P=S.P;P.mxp+=x*xpMult();while(P.mxp>=mxpNeed()){P.mxp-=mxpNeed();P.mlv++;
+  const u=SK_UNLOCK.indexOf(P.mlv);if(u>=0)say(`Magic mastery ${P.mlv}: you learned ${magic().sk[u][0]}.`);
+  if(P.mlv===20||P.mlv===35)say(`Magic mastery ${P.mlv}: your ${magic().n} awakens. Magic power +40%.`);}}
+function addRxp(x){const P=S.P,b=raceStage();P.rxp+=x*xpMult();const a=raceStage();
+  if(a>b)say(`Race stage ${a}: ${race().st.split('|')[a-1]}.`)}
+function skillsUnlocked(){return SK_UNLOCK.filter(l=>S.P.mlv>=l).length}
+
+/* ---- training ---- */
+function trainGain(t,score){
+  const P=S.P,g=GRADES.find(x=>score>=x[1]),tier=P.tier[t.id]||0,m=P.mast[t.id]||0;
+  const gain=2.5*g[2]*TIERM[tier]*(1+m/100)*learnMult();
+  return {g,gain,mast:g[3]*(A().train2?2:1)};
+}
+function applyTrain(t,score){
+  const P=S.P,r=trainGain(t,score);
+  P.raw[t.st]+=r.gain;P.mast[t.id]=Math.min(100,(P.mast[t.id]||0)+r.mast);
+  let extra='';
+  if(t.id==='balance'){const x=6*r.g[2]*(A().train2?2:1);addMxp(x);extra=`, +${Math.round(x*xpMult())} magic XP`}
+  if(t.id==='meditate'){const x=4*r.g[2]*(A().train2?2:1);addRxp(x);extra=`, +${Math.round(x*xpMult())} race XP`}
+  return {...r,txt:`Grade ${r.g[0]}: +${r.gain.toFixed(1)} ${STN[t.st]}, +${r.mast} mastery${extra}`};
+}
+function upgradeTier(id){const P=S.P,t=P.tier[id]||0;if(t>=5)return;const c=TIERC[t+1];if(P.gold<c)return;P.gold-=c;P.tier[id]=t+1}
+function rite(score){
+  const g=GRADES.find(x=>score>=x[1]),x=(12+raceStage()*6)*g[2]*(A().train2?2:1);addRxp(x);
+  return `Grade ${g[0]}: +${Math.round(x*xpMult())} race XP`;
+}
+function jobLv(id){const n=(S.P.jobs||{})[id]||0;let l=0;JOBLV.forEach((x,i)=>{if(n>=x)l=i});return l}
+function jobOpen(j){return S.P.rank>=j.rank&&eff(j.st)>=j.req}
+function jobPay(j){return Math.round((j.b+eff(j.st)*j.k)*(1+jobLv(j.id)*.12)*(1+S.P.rank*.1)*goldMult())}
+function workJob(id){
+  const P=S.P,j=byId(JOBS,id);if(!j||!jobOpen(j)||!useEnergy(1))return;
+  P.jobs=P.jobs||{};const before=jobLv(id),g=jobPay(j),r=.3*learnMult();
+  P.gold+=g;P.raw[j.st]+=r;P.jobs[id]=(P.jobs[id]||0)+1;
+  let msg=`${j.n} shift: +${fmt(g)} gold, +${r.toFixed(1)} ${STN[j.st]}`;
+  if(id==='apoth'&&Math.random()<.2){P.pot.hp=(P.pot.hp||0)+1;msg+=', +1 Healing Draught'}
+  const after=jobLv(id);if(after>before){say(`Promoted to ${JOBT[after]} ${j.n}. Pay +12%.`);msg+=`. Promoted to ${JOBT[after]}!`}
+  toast(msg);
+}
+function rest(){if(!useEnergy(2))return;const P=S.P;P.hp=Math.min(maxHp(),P.hp+maxHp()*.5);P.mp=Math.min(maxMp(),P.mp+maxMp()*.5);toast('You rest. HP and mana restored by 50%.')}
+function healerCost(){return Math.round(10+combatClass()*.6)}
+function healer(){const c=healerCost(),P=S.P;if(P.gold<c)return;P.gold-=c;P.hp=maxHp();P.mp=maxMp();toast('The healer restores you fully.')}
+function drink(k){const P=S.P;if(!P.pot[k])return;P.pot[k]--;if(k==='hp')P.hp=Math.min(maxHp(),P.hp+maxHp()*.45);else P.mp=Math.min(maxMp(),P.mp+maxMp()*.5)}
+function buyPot(k){const P=S.P,c=potCost();if(P.gold<c)return;P.gold-=c;P.pot[k]=(P.pot[k]||0)+1}
+function potCost(){return Math.round(25+combatClass()*.4)}
+function buyGear(id){const P=S.P,g=byId(GEAR,id);if(P.owned.includes(id)){if(g.s==='w')P.wpn=id;else P.foc=id;return}
+  if(P.gold<g.c)return;P.gold-=g.c;P.owned.push(id);if(g.s==='w')P.wpn=id;else P.foc=id;say(`You acquire the ${g.n}.`)}
+function buyLegacy(id){const u=byId(LEGACY,id),lv=S.lp[id]||0,c=u.c*(lv+1);if(lv>=u.max||S.merit<c)return;S.merit-=c;S.lp[id]=lv+1}
+
+/* ---- rebirth ---- */
+function rebirthMerit(){const P=S.P;return Math.floor(combatClass()/8+P.rank*8+Object.keys(P.bosses).length*10+P.mlv+raceStage()*3)}
+function rebirth(){
+  const P=S.P,m=rebirthMerit();
+  S.merit+=m;
+  S.hall.unshift({name:P.name,life:S.lives,race:race().n,mag:magic().n,cc:combatClass(),rank:RANKS[P.rank].n,merit:m});
+  if(S.hall.length>25)S.hall.length=25;
+  S.P=null;C=null;newFate();save();
+  toast(`Life ended. +${m} Merit carried forward.`);
+}
+
+/* ---- time ---- */
+function tick(dt){
+  if(S.phase!=='play')return;
+  const P=S.P,sp=A().speed?5:1;
+  if(P.energy<maxEnergy()){P.ectr+=dt;const s=energySec();while(P.ectr>=s&&P.energy<maxEnergy()){P.ectr-=s;P.energy++}}else P.ectr=0;
+  if(!C){P.hp=Math.min(maxHp(),P.hp+maxHp()*.002*dt*sp);P.mp=Math.min(maxMp(),P.mp+maxMp()*.004*dt*sp)}
+  const t=TRAIN.find(x=>x.st===P.drill);
+  if(t&&!MG)P.raw[P.drill]+=.03*dt*sp*TIERM[P.tier[t.id]||0]*(1+(P.mast[t.id]||0)/100)*learnMult();
+  P.gold+=RANKS[P.rank].sal*dt*goldMult();
+}
+function drillRate(){const P=S.P,t=TRAIN.find(x=>x.st===P.drill);return .03*60*(A().speed?5:1)*TIERM[P.tier[t.id]||0]*(1+(P.mast[t.id]||0)/100)*learnMult()}
+function offline(){
+  const dt=Math.min(8*3600,(Date.now()-S.last)/1000);
+  if(dt<60||S.phase!=='play')return '';
+  const P=S.P,g0=P.gold,r0=P.raw[P.drill];
+  let left=dt*.5;while(left>0){const s=Math.min(60,left);tick(s);left-=s}
+  return `Away ${Math.round(dt/60)} min: +${fmt(P.gold-g0)} gold, +${(P.raw[P.drill]-r0).toFixed(1)} ${STN[P.drill]}.`;
+}
+function save(){try{S.last=Date.now();localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.v===3){S=o;S.assist=S.assist||{};return true}}}catch(e){}return false}
+/* ===== COMBAT ===== */
+const skCost=(i,mm)=>Math.round((mm||maxMp())*magic().sk[i][1]/100);
+const dodgeBase=(a,b)=>clamp(.05+.25*(a-b)/(a+b),.02,.3);
+function makeFoe(n,arch,cc,hpM,atkM,intents){
+  const a=ARCH[arch],e=cc/2;
+  const st={str:e*a.str,mag:e*a.mag,dur:e*a.dur,spd:e*a.spd,vit:e*a.hp,ctl:e*.8,spr:e*.8,int:e*.8};
+  const max=Math.round((80+st.vit*6+st.dur*2)*hpM);
+  return {n,cc:Math.round(cc),st,hp:max,max,pa:(5+st.str)*atkM,ma:(5+st.mag*.9+st.ctl*.4)*atkM,i:intents||a.i,intent:null,phase:1,boss:false,s:{}};
+}
+function canFight(){
+  const P=S.P;
+  if(P.hp<maxHp()*.1){toast('Too injured. Recover first.');return false}
+  return true;
+}
+function startFight(kind,ref){
+  const P=S.P;let foe,cost=1;
+  if(kind!=='spar'&&!canFight())return;
+  if(kind==='region'){
+    const r=byId(REGIONS,ref),sk=P.streak[r.id]||0,f=pick(r.f);
+    foe=makeFoe(f[0],f[1],r.cc*(1+.06*sk),.5,.85);
+  }else if(kind==='boss'){
+    const b=byId(BOSSES,ref);cost=2;
+    foe=makeFoe(b.n,b.a,b.cc,b.hp,1.05+BOSSES.indexOf(b)*.04,b.i);foe.boss=true;
+  }else if(kind==='trial'){
+    const nx=RANKS[P.rank+1];cost=2;
+    foe=makeFoe('Vigil Examiner','duel',nx.cc,1.1,.95);foe.boss=true;
+  }else{
+    foe=makeFoe('Sparring Trainer','duel',combatClass()*.85,.6,.8);
+  }
+  if(!useEnergy(cost))return;
+  const e=effAll();
+  C={kind,ref,foe,e,log:[],over:null,turn:1,snap:{hp:P.hp,mp:P.mp},
+     p:{hp:kind==='spar'?maxHp():P.hp,max:maxHp(),mp:kind==='spar'?maxMp():P.mp,mmax:maxMp(),st:maxSt(),smax:maxSt(),s:{}}};
+  foe.intent=nextIntent();
+  clog(`${foe.n} (CC ${foe.cc}) stands before you.`);
+}
+function clog(t){C.log.unshift(t);if(C.log.length>30)C.log.length=30}
+function nextIntent(){
+  const f=C.foe;
+  if(f.s.charged){f.s.charged=false;return 'unleash'}
+  const w=Object.assign({},f.i);if(f.phase===2)w.charge=(w.charge||0)+1;
+  let t=Object.values(w).reduce((a,b)=>a+b,0),r=Math.random()*t;
+  for(const k in w){r-=w[k];if(r<=0)return k}
+  return 'strike';
+}
+/* player -> foe */
+function hitFoe(Aval,pow,o){
+  const f=C.foe,p=C.p;o=o||{};
+  let D=o.magic?(f.st.spr+f.st.ctl)*.4:f.st.dur*.8;if(o.pierce)D*=.4;
+  if(!o.magic||Math.random()<.5){
+    if(Math.random()<dodgeBase(f.st.spd,C.e.spd)*(o.magic?.5:1)){clog(`${f.n} evades your attack.`);return 0}
+  }
+  let d=pow*Aval*Aval/(Aval+D)*rnd(.9,1.1),crit=false;
+  if(Math.random()<critC()){d*=1.6;crit=true}
+  if(f.s.guard){if(o.heavy){f.s.guard=false;clog(`Your heavy blow breaks ${f.n}'s guard!`)}else d*=.5}
+  if(p.s.open){d*=1.5;p.s.open=false}
+  d=Math.max(1,Math.round(d));f.hp-=d;
+  return crit?-d:d;
+}
+const dtxt=d=>d<0?`${-d} (critical!)`:`${d}`;
+function act(a,arg){
+  if(!C||C.over)return;
+  const p=C.p,f=C.foe,P=S.P;p.s.block=false;p.s.dodge=false;
+  let line='';
+  if(a==='strike'){const d=hitFoe(physA(C.e),1);p.st=Math.min(p.smax,p.st+6);line=d?`You strike for ${dtxt(d)}.`:''}
+  else if(a==='heavy'){if(p.st<25)return;p.st-=25;const d=hitFoe(physA(C.e),1.9,{heavy:true});line=d?`Heavy blow for ${dtxt(d)}.`:''}
+  else if(a==='block'){if(p.st<8)return;p.st-=8;p.s.block=true;p.mp=Math.min(p.mmax,p.mp+p.mmax*.08);line='You raise your guard.'}
+  else if(a==='dodge'){if(p.st<14)return;p.st-=14;p.s.dodge=true;line='You ready yourself to dodge.'}
+  else if(a==='recover'){p.st=Math.min(p.smax,p.st+p.smax*.4);p.mp=Math.min(p.mmax,p.mp+p.mmax*.12);line='You catch your breath.'}
+  else if(a==='pot'){if(!P.pot[arg])return;P.pot[arg]--;
+    if(arg==='hp'){const h=Math.round(p.max*.45);p.hp=Math.min(p.max,p.hp+h);line=`You drink a Healing Draught. +${h} HP.`}
+    else{const h=Math.round(p.mmax*.5);p.mp=Math.min(p.mmax,p.mp+h);line=`You drink a Mana Tonic. +${h} mana.`}}
+  else if(a==='skill'){
+    const sk=magic().sk[arg],cost=skCost(arg,p.mmax);if(!sk||arg>=skillsUnlocked()||p.mp<cost)return;
+    p.mp-=cost;addMxp(3);const M=magA(C.e),ef=sk[3];
+    if(ef==='heal'){const h=Math.round(M*sk[2]*.8);p.hp=Math.min(p.max,p.hp+h);line=`${sk[0]} heals you for ${h}.`}
+    else if(ef==='shield'){const s=Math.round(M*sk[2]);p.s.shield=(p.s.shield||0)+s;line=`${sk[0]}: a ${s}-point shield surrounds you.`}
+    else if(ef==='evade'){p.s.evade=true;line=`${sk[0]}: the next attack will likely miss.`}
+    else if(ef==='counter'){p.s.counter=true;line=`${sk[0]}: you will reflect the next physical blow.`}
+    else if(ef==='multi'){let tot=0;for(let i=0;i<3;i++)tot+=Math.abs(hitFoe(M,sk[2]/3*1.15,{magic:true}));line=`${sk[0]} hits 3 times for ${tot}.`}
+    else{
+      const d=hitFoe(M,sk[2],{magic:true,pierce:ef==='pierce'});line=`${sk[0]} deals ${dtxt(d)}.`;
+      if(d&&ef==='burn'){f.s.burn={d:Math.round(Math.abs(d)*.25),t:3};line+=` ${f.n} is burning.`}
+      if(d&&ef==='drain'){const h=Math.round(Math.abs(d)*.4);p.hp=Math.min(p.max,p.hp+h);line+=` You drain ${h} HP.`}
+      if(ef==='stun'){if(f.boss&&Math.random()<.5)line+=` ${f.n} resists the stun.`;else{f.s.stun=true;line+=` ${f.n} is stunned!`}}
+      if(ef==='weaken'){f.s.weaken=3;line+=` ${f.n} is weakened.`}
+    }
+  }
+  else if(a==='flee'){if(C.kind==='region')P.streak[C.ref]=0;clog('You retreat.');endFight('flee');return}
+  if(line)clog(line);
+  if(f.hp<=0)return endFight('win');
+  if(f.phase===1&&f.boss&&f.hp<f.max*.5){f.phase=2;f.pa*=1.3;f.ma*=1.3;f.st.spd*=1.15;clog(`${f.n} enters a frenzy! Its attacks grow stronger.`)}
+  foeTurn();
+  if(f.s.burn&&f.hp>0){f.hp-=f.s.burn.d;clog(`Burn deals ${f.s.burn.d}.`);if(--f.s.burn.t<=0)delete f.s.burn}
+  if(f.hp<=0)return endFight('win');
+  if(p.hp<=0)return endFight('lose');
+  p.st=Math.min(p.smax,p.st+8);if(f.s.weaken)f.s.weaken--;
+  C.turn++;f.intent=nextIntent();
+}
+/* foe -> player */
+function hitPlayer(Aval,pow,magic){
+  const p=C.p,f=C.foe,e=C.e;
+  if(p.s.counter&&!magic){p.s.counter=false;const r=Math.round(pow*Aval*1.5);f.hp-=r;clog(`You reflect the blow back for ${r}!`);return 0}
+  let dc=dodgeBase(e.spd,f.st.spd)+(p.s.dodge?(magic?.22:.45):0)+(p.s.evade?.6:0);p.s.evade=false;
+  if(Math.random()<dc){if(p.s.dodge){p.s.open=true;clog('You dodge and find an opening! Next attack +50%.')}else clog('You evade it.');return 0}
+  const D=magic?(e.spr+e.ctl)*.4:e.dur*.8;
+  let d=pow*Aval*Aval/(Aval+D)*rnd(.9,1.1);
+  if(f.s.weaken)d*=.65;
+  if(p.s.block)d*=magic?.6:.3;
+  if(A().god)d=0;
+  d=Math.round(d);
+  if(p.s.shield&&d>0){const a=Math.min(p.s.shield,d);p.s.shield-=a;d-=a;if(p.s.shield<=0)delete p.s.shield;if(a)clog(`Your shield absorbs ${a}.`)}
+  p.hp-=d;return d;
+}
+function foeTurn(){
+  const f=C.foe,p=C.p;f.s.guard=false;
+  if(f.s.stun){f.s.stun=false;clog(`${f.n} is stunned and cannot act.`);return}
+  const it=f.intent;let d;
+  if(it==='strike'){d=hitPlayer(f.pa,1,false);if(d)clog(`${f.n} strikes you for ${d}.`)}
+  else if(it==='heavy'){d=hitPlayer(f.pa,1.8,false);if(d)clog(`${f.n} lands a heavy blow for ${d}${p.s.block?' (blocked)':''}.`)}
+  else if(it==='unleash'){d=hitPlayer(f.pa,2.6,false);if(d)clog(`${f.n} UNLEASHES for ${d}${p.s.block?' (blocked)':''}!`)}
+  else if(it==='spell'){d=hitPlayer(f.ma,1.35,true);if(d)clog(`${f.n} casts a spell for ${d}.`)}
+  else if(it==='drain'){d=hitPlayer(f.ma,1.2,true);if(d){const h=Math.round(d*.5);f.hp=Math.min(f.max,f.hp+h);clog(`${f.n} drains ${d} and heals ${h}.`)}}
+  else if(it==='flurry'){let t=0;for(let i=0;i<3;i++)t+=hitPlayer(f.pa,.45,false);if(t)clog(`${f.n}'s flurry deals ${t} in total.`)}
+  else if(it==='guard'){f.s.guard=true;clog(`${f.n} takes a defensive stance. Your next hit deals half, unless it is a heavy blow.`)}
+  else if(it==='charge'){f.s.charged=true;clog(`${f.n} gathers power. Block or dodge next turn!`)}
+  else if(it==='heal'){const h=Math.round(f.max*.12);f.hp=Math.min(f.max,f.hp+h);clog(`${f.n} heals ${h}.`)}
+}
+function endFight(res){
+  const P=S.P,f=C.foe,p=C.p;let rew=[];
+  C.over=res;
+  if(C.kind==='spar'){P.hp=C.snap.hp;P.mp=C.snap.mp}else{P.hp=Math.max(0,p.hp);P.mp=p.mp}
+  if(res==='win'){
+    P.wins++;const cc=f.cc;
+    if(C.kind==='region'){
+      const g=Math.round((8+cc*.7)*rnd(.8,1.2)*goldMult()),x=4+cc*.08,c=(.4+cc*.004)*learnMult()/ (A().train2?2:1);
+      P.gold+=g;addRxp(x);['str','spd','dur'].forEach(k=>P.raw[k]+=c);
+      P.streak[C.ref]=(P.streak[C.ref]||0)+1;
+      rew.push(`+${fmt(g)} gold`,`+${Math.round(x*xpMult())} race XP`,`+${c.toFixed(1)} Strength, Speed, Durability`);
+      if(Math.random()<.04){S.merit++;rew.push('+1 Merit')}
+      if(Math.random()<.15){P.pot.hp=(P.pot.hp||0)+1;rew.push('found a Healing Draught')}
+    }else if(C.kind==='boss'){
+      const b=byId(BOSSES,C.ref),i=BOSSES.indexOf(b),first=!P.bosses[b.id];
+      const g=Math.round(cc*(first?12:4)*goldMult()),x=cc*.4;
+      P.gold+=g;addRxp(x);STK.forEach(k=>P.raw[k]+=cc*.02);
+      rew.push(`+${fmt(g)} gold`,`+${Math.round(x*xpMult())} race XP`,`+${(cc*.02).toFixed(1)} to every stat`);
+      if(first){const m=10+i*8;S.merit+=m;P.bosses[b.id]=1;P.titles.push(b.title);rew.push(`+${m} Merit`,`Title: ${b.title}`);say(`You defeat ${b.n} and earn the title ${b.title}.`)}
+    }else if(C.kind==='trial'){
+      P.rank++;const g=Math.round(RANKS[P.rank].cc*5*goldMult());P.gold+=g;
+      rew.push(`Promoted to ${RANKS[P.rank].n}`,`+${fmt(g)} gold`,'+5% to every stat');say(`You pass the trial and are named ${RANKS[P.rank].n}.`);
+    }else{
+      const c=2.5*1.2*learnMult();['str','spd','dur','int'].forEach(k=>P.raw[k]+=c);
+      rew.push(`+${c.toFixed(1)} Strength, Speed, Durability, Intelligence`);
+    }
+    clog(`Victory over ${f.n}!`);
+  }else if(res==='lose'){
+    clog(`You were defeated by ${f.n}.`);
+    if(C.kind==='region'){P.streak[C.ref]=0;const l=Math.floor(P.gold*.1);P.gold-=l;rew.push(`Lost ${fmt(l)} gold`,'Streak reset')}
+    if(C.kind!=='spar'){P.hp=Math.max(1,Math.round(maxHp()*.05));rew.push('Badly wounded. Recover before your next fight.')}
+  }
+  C.rew=rew;save();
+}
+/* ===== MINI-GAMES ===== */
+const OBST=[['Low beam','Slide'],['Open pit','Jump'],['Falling rocks','Dodge'],['Long gap','Dash'],['Swinging log','Slide'],['Spike row','Jump'],['Thrown spear','Dodge'],['Closing gate','Dash']];
+const MOVES=['Dodge','Jump','Slide','Dash'];
+const SYMS=['◆','▲','●','■','★','✚'];
+function startTrain(id){
+  const isRite=id==='rite',t=isRite?{id:'rite',n:'Heritage Rite',g:'timing'}:byId(TRAIN,id);
+  if(!useEnergy(1))return;
+  MG={t,type:t.g,phase:'play',t0:performance.now(),sc:[],i:0};
+  if(A().auto){mgFinish(.85);return}
+  const m=MG;
+  if(m.type==='timing'){m.n=3;m.sp=[.9,1.25,1.65];m.ph=Math.random()}
+  if(m.type==='breath'){m.type='timing';m.n=4;m.sp=[.35,.42,.5,.58];m.ph=Math.random()}
+  if(m.type==='react'){m.n=6;m.seq=Array.from({length:6},()=>pick(OBST));m.rs=performance.now()}
+  if(m.type==='brace'){m.n=5;m.rs=performance.now()+500}
+  if(m.type==='pace'||m.type==='balance'){m.v=.35;m.inz=0;m.dur=8;m.lt=performance.now()}
+  if(m.type==='mash'){m.taps=0;m.dur=6}
+  if(m.type==='memory'){m.n=3;m.seq=[];m.k=0;m.showing=true;m.shown=-1}
+  renderMG();
+  if(m.type==='memory')memRound();
+  requestAnimationFrame(mgLoop);
+}
+function mgFinish(score){
+  const m=MG;m.phase='done';m.score=clamp(score,0,1);
+  m.res=m.t.id==='rite'?rite(m.score):applyTrain(m.t,m.score).txt;
+  m.grade=GRADES.find(x=>m.score>=x[1]);
+  save();renderMG();render();
+}
+const nowT=()=>(performance.now()-MG.t0)/1000;
+function mgTap(v){
+  const m=MG;if(!m||m.phase!=='play')return;
+  const now=performance.now();
+  if(m.type==='timing'){
+    const x=pipX(),d=Math.abs(x-.5),s=d<.035?1:d<.1?.75:d<.2?.45:.1;
+    m.sc.push(s);m.last=s>=1?'PERFECT':s>=.75?'GOOD':s>=.45?'OK':'MISS';m.i++;m.t0=now;m.ph=Math.random();
+    if(m.i>=m.n)return mgFinish(avg(m.sc));
+  }else if(m.type==='react'){
+    if(now<m.rs)return;
+    const w=1900-m.i*130,el=now-m.rs,ok=v===m.seq[m.i][1];
+    m.sc.push(ok?.5+.5*Math.max(0,1-el/w):0);m.last=ok?'Clean!':`Wrong. It was ${m.seq[m.i][1]}.`;
+    m.i++;m.rs=now+350;if(m.i>=m.n)return mgFinish(avg(m.sc));renderMG();
+  }else if(m.type==='brace'){
+    if(now<m.rs)return;
+    const T=1500-m.i*150,f=(now-m.rs)/T,s=f>=.9&&f<=1?1:f>=.78?.7:f*.4;
+    m.sc.push(s);m.last=s>=1?'PERFECT BRACE':s>=.7?'Good brace':'Too early';m.i++;m.rs=now+450;
+    if(m.i>=m.n)return mgFinish(avg(m.sc));
+  }else if(m.type==='pace'||m.type==='balance'){m.v=Math.min(1,m.v+.11)}
+  else if(m.type==='mash'){m.taps++}
+  else if(m.type==='memory'){
+    if(m.showing)return;
+    if(v===m.seq[m.k]){m.k++;if(m.k>=m.seq.length){m.sc.push(1);m.last='Correct!';nextMem()}}
+    else{m.sc.push(m.k/m.seq.length);m.last=`Wrong. The sequence was ${m.seq.join(' ')}`;nextMem()}
+    if(m.phase==='play')renderMG();
+  }
+  mgUpdate();
+}
+const avg=a=>a.reduce((x,y)=>x+y,0)/Math.max(1,a.length);
+function pipX(){const m=MG;return (Math.sin(2*Math.PI*(nowT()*m.sp[Math.min(m.i,m.n-1)]+m.ph))+1)/2}
+function zoneC(){return MG.type==='balance'?.5+.28*Math.sin(nowT()*1.3):.61}
+function zoneW(){return MG.type==='balance'?.24:.22}
+function nextMem(){const m=MG;m.i++;m.showing=true;if(m.i>=m.n)return mgFinish(avg(m.sc));setTimeout(memRound,900)}
+function memRound(){
+  const m=MG;if(!m||m.phase!=='play')return;
+  m.seq=Array.from({length:4+m.i},()=>pick(SYMS));m.k=0;m.showing=true;m.shown=-1;renderMG();
+  m.seq.forEach((s,j)=>setTimeout(()=>{if(MG!==m)return;m.shown=j;mgUpdate()},350+j*650));
+  setTimeout(()=>{if(MG!==m)return;m.showing=false;m.shown=-1;renderMG()},350+m.seq.length*650);
+}
+function mgLoop(){
+  const m=MG;if(!m||m.phase!=='play')return;
+  const now=performance.now();
+  if(m.type==='react'&&now>m.rs&&now-m.rs>1900-m.i*130){m.sc.push(0);m.last=`Too slow. It needed ${m.seq[m.i][1]}.`;m.i++;m.rs=now+350;if(m.i>=m.n)return mgFinish(avg(m.sc));renderMG()}
+  if(m.type==='brace'&&now>m.rs&&(now-m.rs)>1500-m.i*150){m.sc.push(0);m.last='You took the full hit!';m.i++;m.rs=now+450;if(m.i>=m.n)return mgFinish(avg(m.sc))}
+  if(m.type==='pace'||m.type==='balance'){
+    const dt=(now-m.lt)/1000;m.lt=now;
+    m.v=clamp(m.v-(m.type==='pace'?.3:.36)*dt+(Math.random()-.5)*.02,0,1);
+    if(Math.abs(m.v-zoneC())<zoneW()/2)m.inz+=dt;
+    if(nowT()>=m.dur)return mgFinish(m.inz/(m.dur*.85));
+  }
+  if(m.type==='mash'&&nowT()>=m.dur)return mgFinish(m.taps/42);
+  mgUpdate();requestAnimationFrame(mgLoop);
+}
+/* ===== UI: SCREENS ===== */
+const $=id=>document.getElementById(id);
+let modal=null,flashCat=null;
+const rc=r=>RAR[r].c;
+const rtag=it=>`<span style="color:${rc(it.r)}">${it.n}</span>`;
+function fmtM(m){
+  return Object.entries(m).map(([k,v])=>{
+    const p=(v>0?'+':'')+Math.round(v*100)+'%';
+    return `${p} ${STN[k]||XN[k]||k}`;
+  });
+}
+function bar(cls,v,max,label){
+  const pc=clamp(v/max*100,0,100);
+  return `<div><div class="blabel"><span>${label}</span><span class="num">${fmt(Math.max(0,v))} / ${fmt(max)}</span></div><div class="bar ${cls}"><i style="width:${pc}%"></i></div></div>`;
+}
+const TABS=[['you','You'],['train','Training'],['work','Work'],['adv','Adventure'],['boss','Bosses'],['arm','Armory'],['leg','Legacy']];
+
+function hud(){
+  if(S.phase==='create'){
+    $('hud').innerHTML=`<div class="hrow"><h1 class="logo" style="font-size:1.35rem">Lineage of the Vigil</h1>
+    <div class="cur"><span>Merit <b class="m num">${fmt(S.merit)}</b></span><button class="alt" data-a="modal" data-v="settings" style="min-height:32px;padding:4px 10px">Settings</button></div></div>
+    <div class="sm dim">Forge your fate. Life ${S.lives+1}.</div>`;
+    return;
+  }
+  const P=S.P;
+  $('hud').innerHTML=`<div class="hrow"><h1>${P.name} <span class="cc num" style="font-size:.9rem">CC <span id="hCC">${combatClass()}</span></span></h1>
+  <div class="cur"><span>G <b class="g num" id="hG">${fmt(P.gold)}</b></span><span>M <b class="m num" id="hM">${fmt(S.merit)}</b></span>
+  <span>Energy <b class="e num" id="hE">${P.energy}/${maxEnergy()}</b></span>
+  <button class="alt" data-a="modal" data-v="settings" style="min-height:30px;padding:3px 10px;font-size:.72rem">Settings</button></div></div>
+  <div class="sm dim">${race().n} · ${magic().n} · ${RANKS[P.rank].n}</div>
+  <div class="bars" id="hBars">${hudBars()}</div>`;
+}
+function hudBars(){const P=S.P;return bar('',P.hp,maxHp(),'HP')+bar('mp',P.mp,maxMp(),'Mana')}
+function hudLive(){
+  if(S.phase!=='play'){const m=document.querySelector('.cur .m');if(m)m.textContent=fmt(S.merit);liveBtns();return}
+  const P=S.P;
+  if(!$('hG'))return hud();
+  $('hG').textContent=fmt(P.gold);$('hM').textContent=fmt(S.merit);$('hE').textContent=`${P.energy}/${maxEnergy()}`;
+  $('hCC').textContent=combatClass();$('hBars').innerHTML=hudBars();
+  liveBtns();
+}
+function liveBtns(){
+  document.querySelectorAll('[data-cg]').forEach(b=>b.disabled=!S.P||S.P.gold<+b.dataset.cg);
+  document.querySelectorAll('[data-ce]').forEach(b=>b.disabled=!S.P||S.P.energy<+b.dataset.ce);
+  document.querySelectorAll('[data-cm]').forEach(b=>b.disabled=S.merit<+b.dataset.cm);
+}
+function nav(){
+  if(S.phase==='create'){$('nav').hidden=true;return}
+  $('nav').hidden=false;
+  $('nav').innerHTML=TABS.map(t=>`<button data-a="tab" data-v="${t[0]}" class="${tab===t[0]?'on':''}">${t[1]}</button>`).join('');
+}
+
+/* ---- creation ---- */
+function vCreate(){
+  const f=S.fate,cat=CATS.find(c=>c[0]===ctab),it=byId(cat[2],f[ctab]),c=spinCost(ctab);
+  const extra=ctab==='mag'?`<div class="sm" style="text-align:left">${it.sk.map((s,i)=>`<div>• <b>${s[0]}</b> <span class="dim">(mastery ${SK_UNLOCK[i]}) ${EFFN[s[3]]||'Damage'}</span></div>`).join('')}</div>`
+    :`<ul>${fmtM(it.m).map(x=>`<li>${x}</li>`).join('')}</ul>`;
+  const stages=ctab==='race'?`<div class="sm dim" style="text-align:left">Stages: ${it.st.split('|').join(' · ')}</div>`:'';
+  return `<div class="col">
+  <div class="ctabs">${CATS.map(x=>`<button data-a="ctab" data-v="${x[0]}" class="${ctab===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>
+  <div class="fate">
+    <div class="card roll ${flashCat===ctab?'flash':''}">
+      <div class="sm dim">${cat[1].toUpperCase()} · ROLLED BY FATE</div>
+      <div class="rn">${it.n}</div><div class="rr" style="color:${rc(it.r)}">${RAR[it.r].n.toUpperCase()}</div>
+      <div class="d">${it.d}</div>
+      <h2 style="font-size:.8rem">Birthright</h2>${extra}${stages}
+      <button class="big" data-a="spin" data-v="${ctab}" ${c?`data-cm="${c}"`:''}>Spin ${cat[1]} · ${A().spins?'free':f.spins[ctab]>0?f.spins[ctab]+' free left':'25 Merit'}</button>
+      <div class="btns">${ctab!=='trait'?`<button class="alt" data-a="modal" data-v="exact">Choose exact fate</button>`:''}<button class="alt" data-a="modal" data-v="odds">Odds</button></div>
+    </div>
+    <div class="card">
+      <h2>Create your legend</h2>
+      <div class="btns"><input id="fname" maxlength="18" value="${f.name}" aria-label="Character name"><button class="alt" data-a="rname" style="flex:0 0 auto">Random</button></div>
+      <div class="summary"><div style="text-align:center;font-weight:800;color:var(--crim)">CURRENT FATE</div>
+      ${CATS.map(([k,n,l])=>{const x=byId(l,f[k]);return `<div>${n}: <b>${x.n}</b> <span class="pill" style="color:${x.r>=6?'#7a5a00':'var(--crim)'}">${RAR[x.r].n}</span></div>`}).join('')}</div>
+      <div class="sm dim">Free spins: ${CATS.map(([k,n])=>`${n} ${A().spins?'∞':f.spins[k]}`).join(' · ')}. After that each spin costs 25 Merit. Rare rolls give potential, not instant victory.</div>
+      <button class="big" data-a="modal" data-v="back" style="background:#6b4513">Begin this life ›</button>
+      <button class="alt" data-a="modal" data-v="legacy">Merit upgrades</button>
+    </div>
+  </div></div>`;
+}
+
+/* ---- you ---- */
+function vYou(){
+  const P=S.P,e=effAll(),st=raceStage(),stg=race().st.split('|'),nx=RACE_XP[st];
+  const sk=magic().sk,un=skillsUnlocked(),w=P.wpn&&byId(GEAR,P.wpn),fo=P.foc&&byId(GEAR,P.foc);
+  return `<div class="grid">
+  <div class="card"><h2>${P.name}</h2><div class="d">Life ${S.lives} · ${byId(BACKS,P.back).n}</div>
+    <div class="kv"><span>Race</span><b>${rtag(race())}</b></div>
+    <div class="kv"><span>Bloodline</span><b>${rtag(bl())}</b></div>
+    <div class="kv"><span>Innate magic</span><b>${rtag(magic())}</b></div>
+    <div class="kv"><span>Trait</span><b>${rtag(trait())}</b></div>
+    <div class="kv"><span>Vigil rank</span><b>${RANKS[P.rank].n}</b></div>
+    <div class="kv"><span>Weapon</span><b>${w?w.n:'None'}</b></div>
+    <div class="kv"><span>Focus</span><b>${fo?fo.n:'None'}</b></div>
+    <div class="kv"><span>Victories</span><b class="num">${P.wins}</b></div>
+    <div class="kv"><span>Titles</span><b>${P.titles.length?P.titles.join(', '):'None yet'}</b></div>
+  </div>
+  <div class="card"><h2 style="color:var(--hp)">Combat Class ${combatClass()}</h2>
+    ${STK.map(k=>`<div class="kv"><span>${STN[k]}</span><b class="num">${fmt(e[k])} <span class="dim sm">×${mult(k).toFixed(2)}</span></b></div>`).join('')}
+    <div class="kv"><span>Max HP / Mana / Stamina</span><b class="num">${fmt(maxHp(e))} / ${fmt(maxMp(e))} / ${fmt(maxSt(e))}</b></div>
+    <div class="kv"><span>Attack / Magic power</span><b class="num">${fmt(physA(e))} / ${fmt(magA(e))}</b></div>
+    <div class="kv"><span>Critical chance</span><b class="num">${Math.round(critC()*100)}%</b></div>
+  </div>
+  <div class="card"><h2>Race progression</h2><div class="d">${race().n} · Stage ${st}/7</div>
+    ${nx?bar('xp',P.rxp,nx,'Race XP'):'<div class="d">Fully awakened.</div>'}
+    <ul class="stages">${stg.map((s,i)=>`<li class="${i<st?'on':''}">${i<st?'◆':'◇'} Stage ${i+1}: ${s}</li>`).join('')}</ul>
+    <div class="sm dim">Each stage: +4% all stats, +6% more to your race's strong stats. Earn race XP from Meditation, the Heritage Rite and fights.</div>
+  </div>
+  <div class="card"><h2>${magic().n} · Mastery ${P.mlv}</h2>${bar('mp',P.mxp,mxpNeed(),'Mastery XP')}
+    ${sk.map((s,i)=>`<div class="kv"><span>${i<un?'◆':'◇'} <b>${s[0]}</b><br><span class="sm dim">${EFFN[s[3]]||'Damage'}${s[2]?` · power ${s[2]}`:''}</span></span><b class="num sm">${i<un?s[1]+'% mana':'Mastery '+SK_UNLOCK[i]}</b></div>`).join('')}
+    <div class="sm dim">Awakenings at mastery 20 and 35, each +40% magic power${P.mlv>=20?' (active)':''}. Gain mastery by casting in combat and through Energy Balance.</div>
+  </div>
+  <div class="card parch"><h2>Chronicle</h2><div class="log">${P.log.slice(0,12).map(x=>`<p>${x}</p>`).join('')}</div></div>
+  <div class="card"><h2>End this life</h2><div class="d">Rebirth carries ${rebirthMerit()} Merit into a new life. Merit buys permanent upgrades and fate rerolls. Everything else resets.</div>
+    <button class="alt" data-a="rebirth">Rebirth for ${rebirthMerit()} Merit</button></div>
+  </div>`;
+}
+
+/* ---- training ---- */
+function vTrain(){
+  const P=S.P;
+  return `<div class="col">
+  <div class="card"><div class="hrow"><h2 id="tE">Energy ${P.energy}/${maxEnergy()}</h2><span class="sm dim">+1 every ${Math.round(energySec())}s</span></div>
+    <div class="btns" style="align-items:center"><span class="sm" style="flex:0 0 auto">Passive drill</span>
+    <select id="drill" data-a="drill" aria-label="Passive drill">${STK.map(k=>`<option value="${k}" ${P.drill===k?'selected':''}>${STN[k]}</option>`).join('')}</select></div>
+    <div class="sm dim">Your drill trains one stat on its own: +${drillRate().toFixed(1)} ${STN[P.drill]} per minute, and half rate while you are away (up to 8 hours).</div>
+    ${A().auto?'<div class="sm" style="color:var(--gold2)">Auto training is on: sessions complete instantly at Grade A.</div>':''}
+  </div>
+  <div class="grid">${TRAIN.map(t=>{const tr=P.tier[t.id]||0,m=P.mast[t.id]||0,g=trainGain(t,.85);
+    return `<div class="card"><div class="t">${t.n}</div><div class="d">${t.d}</div>
+    <div class="meta">${STN[t.st]} · ${TIERN[tr]} gear · Mastery ${m}%</div>
+    <div class="sm dim" style="text-align:center">Grade A gives about +${g.gain.toFixed(1)}</div>
+    <div class="btns"><button data-a="train" data-v="${t.id}" data-ce="1">Train · 1 energy</button>
+    ${tr<5?`<button class="alt" data-a="tier" data-v="${t.id}" data-cg="${TIERC[tr+1]}">${TIERN[tr+1]} · ${fmt(TIERC[tr+1])}g</button>`:'<button class="alt" disabled>Max gear</button>'}</div></div>`}).join('')}
+  <div class="card"><div class="t">Heritage Rite</div><div class="d">Honour your ${race().n} heritage. A timing rite that grants race XP.</div>
+    <div class="meta">Race XP · Stage ${raceStage()}/7</div><button data-a="train" data-v="rite" data-ce="1">Perform rite · 1 energy</button></div>
+  <div class="card"><div class="t">Combat Sparring</div><div class="d">A real fight against a trainer near your level. No injuries carry over.</div>
+    <div class="meta">Strength · Speed · Durability · Intelligence</div><button data-a="fight" data-v="spar" data-ce="1">Spar · 1 energy</button></div>
+  </div></div>`;
+}
+
+/* ---- adventure ---- */
+function recoveryCard(){
+  const P=S.P,hc=healerCost();
+  return `<div class="card"><h2>Recovery</h2><div class="d">HP and mana carry over between fights and slowly regenerate.</div>
+  ${bar('',P.hp,maxHp(),'HP')}${bar('mp',P.mp,maxMp(),'Mana')}
+  <div class="btns"><button class="alt" data-a="rest" data-ce="2">Rest · 2 energy</button><button class="alt" data-a="healer" data-cg="${hc}">Healer · ${fmt(hc)}g</button></div>
+  <div class="btns"><button class="alt" data-a="drink" data-v="hp" ${P.pot.hp?'':'disabled'}>Draught (${P.pot.hp||0})</button><button class="alt" data-a="drink" data-v="mp" ${P.pot.mp?'':'disabled'}>Tonic (${P.pot.mp||0})</button></div></div>`;
+}
+function vAdv(){
+  const P=S.P,cc=combatClass(),nx=RANKS[P.rank+1];
+  return `<div class="grid">${recoveryCard()}
+  <div class="card"><h2>Vigil rank: ${RANKS[P.rank].n}</h2>
+   ${nx?`<div class="d">Next: ${nx.n}. The examiner fights at CC ${nx.cc}. Each rank gives +5% to every stat and ${nx.sal} gold per second salary.</div>
+   <button data-a="fight" data-v="trial" ${cc<nx.cc*.8?'disabled':'data-ce="2"'}>Face the trial · 2 energy</button>${cc<nx.cc*.8?`<div class="sm dim" style="text-align:center">Reach CC ${Math.ceil(nx.cc*.8)} to attempt it.</div>`:''}`
+   :'<div class="d">You hold the highest rank of the Vigil.</div>'}
+   <div class="sm dim" style="text-align:center">Salary: ${(RANKS[P.rank].sal*goldMult()).toFixed(1)} gold/s</div></div>
+  ${REGIONS.map(r=>{const lock=P.rank<r.rank,sk=P.streak[r.id]||0,ec=Math.round(r.cc*(1+.06*sk));
+    return `<div class="card ${lock?'lock':''}"><div class="t">${r.n}</div>
+    <div class="d">${r.f.map(f=>f[0]).join(', ')}</div>
+    <div class="meta"><span style="color:${cc>=ec?'var(--st)':cc>=ec*.75?'var(--gold2)':'var(--hp)'}">Enemy CC ${ec}</span> · Win streak ${sk}</div>
+    <div class="sm dim" style="text-align:center">Each win raises the streak, enemy strength and rewards.</div>
+    <button data-a="fight" data-v="region:${r.id}" ${lock?'disabled':'data-ce="1"'}>${lock?`Requires ${RANKS[r.rank].n}`:'Explore · 1 energy'}</button></div>`}).join('')}
+  </div>`;
+}
+function vBoss(){
+  const P=S.P,cc=combatClass();
+  return `<div class="grid">${BOSSES.map((b,i)=>{const lock=P.rank<Math.min(i,6),done=P.bosses[b.id];
+    return `<div class="card ${lock?'lock':''}"><div class="t">${b.n}</div><div class="d">${b.d}</div>
+    <div class="meta"><span style="color:${cc>=b.cc*1.2?'var(--st)':cc>=b.cc*.9?'var(--gold2)':'var(--hp)'}">Boss CC ${b.cc}</span> · ${done?`Defeated · ${b.title}`:`First kill: ${10+i*8} Merit, title ${b.title}`}</div>
+    <button data-a="fight" data-v="boss:${b.id}" ${lock?'disabled':'data-ce="2"'}>${lock?`Requires ${RANKS[Math.min(i,6)].n}`:'Challenge · 2 energy'}</button></div>`}).join('')}
+  <div class="card"><h2>Boss tips</h2><div class="d">Bosses telegraph their next move. Block heavy blows and anything marked UNLEASH. Below half HP they enter a frenzy. Bosses resist stuns half the time. Aim for about 20% more CC than the boss.</div></div></div>`;
+}
+function vArm(){
+  const P=S.P,pc=potCost();
+  const row=g=>{const own=P.owned.includes(g.id),eq=P.wpn===g.id||P.foc===g.id;
+    return `<div class="kv" style="align-items:center"><span><b>${g.n}</b><br><span class="sm dim">+${Math.round(g.b*100)}% ${g.s==='w'?'physical attack':'magic power'}</span></span>
+    ${eq?'<b class="sm" style="color:var(--st)">Equipped</b>':own?`<button class="alt" data-a="gear" data-v="${g.id}" style="min-height:34px">Equip</button>`:`<button data-a="gear" data-v="${g.id}" data-cg="${g.c}" style="min-height:34px">${fmt(g.c)}g</button>`}</div>`};
+  return `<div class="grid">
+  <div class="card"><h2>Weapons</h2>${GEAR.filter(g=>g.s==='w').map(row).join('')}</div>
+  <div class="card"><h2>Magic focus</h2>${GEAR.filter(g=>g.s==='f').map(row).join('')}</div>
+  <div class="card"><h2>Apothecary</h2><div class="d">Usable in combat or at rest.</div>
+    <div class="kv" style="align-items:center"><span><b>Healing Draught</b> (${P.pot.hp||0})<br><span class="sm dim">Restores 45% HP</span></span><button data-a="pot" data-v="hp" data-cg="${pc}" style="min-height:34px">${pc}g</button></div>
+    <div class="kv" style="align-items:center"><span><b>Mana Tonic</b> (${P.pot.mp||0})<br><span class="sm dim">Restores 50% mana</span></span><button data-a="pot" data-v="mp" data-cg="${pc}" style="min-height:34px">${pc}g</button></div></div>
+  </div>`;
+}
+function legacyList(){
+  return LEGACY.map(u=>{const lv=S.lp[u.id]||0,c=u.c*(lv+1);
+    return `<div class="kv" style="align-items:center"><span><b>${u.n}</b> <span class="pill dim">${lv}/${u.max}</span><br><span class="sm dim">${u.d}</span></span>
+    ${lv>=u.max?'<b class="sm">Max</b>':`<button data-a="leg" data-v="${u.id}" data-cm="${c}" style="min-height:34px">${c} M</button>`}</div>`}).join('');
+}
+function vLeg(){
+  const tot=CATS.map(([k,n,l])=>`${n} ${Object.keys(S.codex[k]).length}/${l.length}`).join(' · ');
+  return `<div class="grid">
+  <div class="card"><h2>Merit ${fmt(S.merit)}</h2><div class="d">Permanent upgrades that last across every life.</div>${legacyList()}</div>
+  <div class="card"><h2>Codex</h2><div class="d">First time you roll anything earns Merit, more for rarer finds.</div><div class="sm" style="text-align:center">${tot}</div>
+    ${CATS.map(([k,n,l])=>`<div class="sm"><b>${n}:</b> ${l.map(x=>S.codex[k][x.id]?`<span style="color:${rc(x.r)}">${x.n}</span>`:'<span class="dim">???</span>').join(', ')}</div>`).join('')}</div>
+  <div class="card"><h2>Past lives</h2>${S.hall.length?S.hall.map(h=>`<div class="kv"><span>Life ${h.life} · ${h.name}<br><span class="sm dim">${h.race}, ${h.mag}</span></span><b class="sm">CC ${h.cc} · ${h.rank}<br>+${h.merit} M</b></div>`).join(''):'<div class="d">This is your first life.</div>'}</div>
+  </div>`;
+}
+function vWork(){
+  const P=S.P,jobs=P.jobs||{};
+  return `<div class="col"><div class="card"><h2>Work</h2><div class="d">Each shift costs 1 energy, pays gold based on one stat and trains it a little. Promotions come at ${JOBLV.slice(1).join(', ')} shifts, each +12% pay. Rank raises all pay by 10% per rank.</div>
+  <div class="sm" style="text-align:center">Energy <b class="num" id="wE">${P.energy}/${maxEnergy()}</b> · Gold <b class="num">${fmt(P.gold)}</b></div></div>
+  <div class="grid">${JOBS.map(j=>{const open=jobOpen(j),lv=jobLv(j.id),n=jobs[j.id]||0,nx=JOBLV[lv+1];
+    const need=[j.rank>P.rank?RANKS[j.rank].n:'',eff(j.st)<j.req?`${j.req} ${STN[j.st]} (you have ${fmt(eff(j.st))})`:''].filter(Boolean).join(' and ');
+    return `<div class="card ${open?'':'lock'}"><div class="t">${j.n}</div><div class="d">${j.d}</div>
+    <div class="meta">${STN[j.st]} · ${open?`${JOBT[lv]} · ${n} shifts${nx?` (next at ${nx})`:''}`:'Locked'}</div>
+    ${open?`<button data-a="work" data-v="${j.id}" data-ce="1">Work · +${fmt(jobPay(j))}g</button>`:`<button disabled>Needs ${need}</button>`}</div>`}).join('')}</div></div>`;
+}
+const VIEWS={you:vYou,train:vTrain,work:vWork,adv:vAdv,boss:vBoss,arm:vArm,leg:vLeg};
+/* ===== UI: OVERLAYS, EVENTS, BOOT ===== */
+let toastT=null;
+function toast(t){const el=$('toast');if(!el)return;el.textContent=t;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,2600)}
+function render(){
+  hud();nav();
+  const v=$('view'),y=v.scrollTop;
+  v.innerHTML=S.phase==='create'?vCreate():VIEWS[tab]();
+  v.scrollTop=y;flashCat=null;renderOv();liveBtns();
+}
+const renderMG=()=>renderOv();
+function renderOv(){
+  const o=$('ov');
+  let h='';
+  if(C)h=vCombat();else if(MG)h=vMG();else if(modal)h=vModal();
+  if(!h){o.hidden=true;o.innerHTML='';return}
+  o.hidden=false;o.innerHTML=`<div class="box" ${C?'style="max-width:620px"':''}>${h}</div>`;
+  if(MG)mgUpdate();
+  liveBtns();
+}
+/* ---- combat ---- */
+function vCombat(){
+  const f=C.foe,p=C.p,P=S.P,sk=magic().sk,un=skillsUnlocked();
+  const fc=[f.s.guard&&'Guarding',f.s.burn&&`Burning ${f.s.burn.t}`,f.s.stun&&'Stunned',f.s.weaken&&`Weakened ${f.s.weaken}`,f.phase===2&&'Frenzy'].filter(Boolean);
+  const pc=[p.s.shield&&`Shield ${p.s.shield}`,p.s.evade&&'Evasive',p.s.counter&&'Counter ready',p.s.open&&'Opening +50%'].filter(Boolean);
+  const chip=c=>`<span class="pill" style="color:var(--gold2)">${c}</span>`;
+  let body;
+  if(!C.over){
+    const ab=(a,v,l,s,dis)=>`<button data-a="act" data-v="${a}${v!=null?':'+v:''}" ${dis?'disabled':''}>${l}<small>${s}</small></button>`;
+    body=`<div class="acts">
+    ${ab('strike',null,'Strike','+6 stamina')}${ab('heavy',null,'Heavy','25 stamina · breaks guard',p.st<25)}${ab('block',null,'Block','8 stamina · -70% physical',p.st<8)}
+    ${ab('dodge',null,'Dodge','14 stamina · counter opening',p.st<14)}${ab('recover',null,'Recover','+40% stamina')}
+    ${ab('pot','hp','Draught',`${P.pot.hp||0} left · +45% HP`,!P.pot.hp)}
+    ${sk.map((s,i)=>i<un?`<button class="sk" data-a="act" data-v="skill:${i}" ${p.mp<skCost(i,p.mmax)?'disabled':''}>${s[0]}<small>${skCost(i,p.mmax)} mana · ${EFFN[s[3]]||'damage'}</small></button>`:'').join('')}
+    ${ab('pot','mp','Tonic',`${P.pot.mp||0} left · +50% mana`,!P.pot.mp)}${ab('flee',null,'Flee',C.kind==='region'?'resets streak':'no reward')}
+    </div>`;
+  }else{
+    const t=C.over==='win'?'Victory':C.over==='lose'?'Defeat':'Retreated';
+    body=`<div class="grade" style="font-size:2rem;color:${C.over==='win'?'var(--gold2)':'var(--hp)'}">${t}</div>
+    ${C.rew&&C.rew.length?`<div class="card">${C.rew.map(r=>`<div class="sm">◆ ${r}</div>`).join('')}</div>`:''}
+    <div class="btns"><button class="alt" data-a="leave">Continue</button>${C.kind==='region'&&C.over==='win'?`<button data-a="again" data-ce="1">Explore again · 1</button>`:''}</div>`;
+  }
+  const warn=INTW[f.intent];
+  return `<div class="unit"><div class="nm"><span>${f.n}</span><span class="cc num">CC ${f.cc}</span></div>
+    ${bar('',f.hp,f.max,'HP')}<div class="chips">${fc.map(chip).join('')}</div>
+    ${!C.over?`<div class="intent ${warn?'warn':''}">Next: ${INTN[f.intent]}${f.intent==='unleash'?' (block or dodge!)':''}</div>`:''}</div>
+  <div class="unit"><div class="nm"><span>${P.name}</span><span class="cc num">CC ${combatClass()}</span></div>
+    ${bar('',p.hp,p.max,'HP')}${bar('mp',p.mp,p.mmax,'Mana')}${bar('st',p.st,p.smax,'Stamina')}<div class="chips">${pc.map(chip).join('')}</div></div>
+  ${body}
+  <div class="clog">${C.log.slice(0,8).map(l=>`<p>${l}</p>`).join('')}</div>`;
+}
+/* ---- mini-game view ---- */
+function vMG(){
+  const m=MG,t=m.t;
+  if(m.phase==='done')return `<h2>${t.n}</h2><div class="grade" style="color:${m.grade[4]}">${m.grade[0]}</div>
+    <div class="d" style="text-align:center">${m.res}</div>
+    <div class="btns"><button class="alt" data-a="mgclose">Close</button><button data-a="train" data-v="${t.id}" data-ce="1">Again · 1 energy</button></div>`;
+  let g='';
+  if(m.type==='timing')g=`<div class="meter"><div class="zone" style="left:30%;width:40%"></div><div class="zone p" style="left:46.5%;width:7%"></div><div class="pip" id="mgPip"></div></div>
+    <button class="big" data-a="mg" data-v="tap">${t.id==='meditate'?'Breathe':'Strike'}</button>`;
+  if(m.type==='react')g=`<div class="bar st"><i id="mgFill"></i></div><div class="syms" style="grid-template-columns:1fr 1fr">${MOVES.map(x=>`<button data-a="mg" data-v="${x}">${x}</button>`).join('')}</div>`;
+  if(m.type==='brace')g=`<div class="meter"><div class="zone" style="left:78%;width:22%"></div><div class="zone p" style="left:90%;width:10%"></div><div class="pip" id="mgPip"></div></div>
+    <button class="big" data-a="mg" data-v="tap">Brace</button>`;
+  if(m.type==='pace'||m.type==='balance')g=`<div class="meter"><div class="zone" id="mgZone"></div><div class="pip" id="mgPip"></div></div>
+    <button class="big" data-a="mg" data-v="tap" style="min-height:76px">${m.type==='pace'?'Push pace':'Channel'}</button>`;
+  if(m.type==='mash')g=`<div class="bar mp"><i id="mgFill"></i></div><button class="big" data-a="mg" data-v="tap" style="min-height:96px;font-size:1.4rem">Charge</button>`;
+  if(m.type==='memory')g=`<div class="syms">${SYMS.map(s=>`<button data-a="mg" data-v="${s}" ${m.showing?'disabled':''}>${s}</button>`).join('')}</div>`;
+  return `<h2>${t.n}</h2><div class="d">${t.d||'Strike when the marker is centred. Three swings.'}</div>
+    <div class="mgbig" id="mgBig"></div><div class="sm dim" style="text-align:center" id="mgInfo"></div>${g}
+    <div class="sm" style="text-align:center;min-height:1.2em;color:var(--gold2)" id="mgLast"></div>`;
+}
+function mgUpdate(){
+  const m=MG;if(!m||m.phase!=='play'||!$('mgInfo'))return;
+  const now=performance.now(),pip=$('mgPip'),fill=$('mgFill');
+  $('mgLast').textContent=m.last||'';
+  if(m.type==='timing'){pip.style.left=pipX()*100+'%';$('mgInfo').textContent=`${m.t.id==='meditate'?'Breath':'Swing'} ${m.i+1} of ${m.n}`}
+  if(m.type==='react'){
+    const w=1900-m.i*130,ready=now>=m.rs;
+    $('mgBig').textContent=ready?m.seq[m.i][0]:'...';
+    fill.style.width=ready?Math.max(0,100-(now-m.rs)/w*100)+'%':'100%';
+    $('mgInfo').textContent=`Obstacle ${m.i+1} of ${m.n}`;
+  }
+  if(m.type==='brace'){const T=1500-m.i*150;pip.style.left=(now<m.rs?0:clamp((now-m.rs)/T,0,1)*100)+'%';$('mgInfo').textContent=`Incoming blow ${m.i+1} of ${m.n}`}
+  if(m.type==='pace'||m.type==='balance'){
+    const z=$('mgZone'),c=zoneC(),w=zoneW();z.style.left=(c-w/2)*100+'%';z.style.width=w*100+'%';pip.style.left=m.v*100+'%';
+    $('mgInfo').textContent=`${Math.max(0,m.dur-nowT()).toFixed(1)}s left · in zone ${m.inz.toFixed(1)}s`;
+  }
+  if(m.type==='mash'){$('mgBig').textContent=m.taps;fill.style.width=Math.min(100,m.taps/42*100)+'%';$('mgInfo').textContent=`${Math.max(0,m.dur-nowT()).toFixed(1)}s left · 42 taps for top grade`}
+  if(m.type==='memory'){
+    $('mgInfo').textContent=`Round ${m.i+1} of ${m.n}`;
+    $('mgBig').textContent=m.showing?(m.shown>=0?m.seq[m.shown]:'Watch...'):`${'●'.repeat(m.k)}${'○'.repeat(m.seq.length-m.k)}`;
+  }
+}
+/* ---- modals ---- */
+function vModal(){
+  if(modal==='odds')return `<h2>Fate odds</h2><div class="d">Each category gets ${freeSpins()} free spins per life. After that a spin costs 25 Merit. Secret results can only be rolled, never chosen.</div>
+    <div class="card odds">${RAR.map(r=>`<div><span style="color:${r.c}">${r.n.toUpperCase()}</span><span class="num">${r.w.toFixed(1)}%</span></div>`).join('')}</div><button class="alt" data-a="close">Close</button>`;
+  if(modal==='exact'){const cat=CATS.find(c=>c[0]===ctab);
+    return `<h2>Choose exact ${cat[1]}</h2><div class="d">Pick any ${cat[1].toLowerCase()} below Secret for Merit. You have ${S.merit} Merit.</div>
+    ${cat[2].filter(x=>x.r<7).map(x=>`<div class="kv" style="align-items:center"><span>${rtag(x)}<br><span class="sm dim">${x.d}</span></span><button data-a="exact" data-v="${x.id}" data-cm="${EXACT_COST[x.r]}" style="min-height:34px">${EXACT_COST[x.r]} M</button></div>`).join('')}
+    <button class="alt" data-a="close">Close</button>`}
+  if(modal==='back')return `<h2>Choose your backstory</h2><div class="d">Your childhood sets your starting stats and wealth. It cannot be changed during this life.</div>
+    <div class="grid" style="grid-template-columns:1fr">${BACKS.map(b=>`<div class="card"><div class="t">${b.n}</div><div class="d">${b.d}</div>
+    <div class="meta">${Object.entries(b.raw).map(([k,v])=>`${v>0?'+':''}${v} ${STN[k]}`).join(', ')} · ${b.gold} gold</div>
+    <button data-a="begin" data-v="${b.id}">Begin as ${b.n}</button></div>`).join('')}</div><button class="alt" data-a="close">Cancel</button>`;
+  if(modal==='legacy')return `<h2>Merit upgrades</h2><div class="d">You have ${S.merit} Merit.</div>${legacyList()}<button class="alt" data-a="close">Close</button>`;
+  if(modal==='reb')return `<h2>End this life?</h2><div class="d">${S.P.name}'s story ends here. You carry ${rebirthMerit()} Merit, your upgrades and your codex into a new life. Stats, gold, gear and rank reset.</div>
+    <div class="btns"><button class="alt" data-a="close">Keep living</button><button data-a="dorebirth">Rebirth</button></div>`;
+  if(modal==='settings')return `<h2>Settings</h2>
+    <div class="d">Assists are optional and free. They replace paid passes and are off by default.</div>
+    ${ASSISTS.map(([k,n,d])=>`<div class="toggle"><span>${n}<small>${d}</small></span><button class="${A()[k]?'':'alt'}" data-a="assist" data-v="${k}">${A()[k]?'On':'Off'}</button></div>`).join('')}
+    <h2 style="margin-top:6px">Save data</h2><div class="d">Progress saves in this browser. Copy the code to back it up or move it.</div>
+    <textarea id="sv" rows="3" placeholder="Paste a save code here to import" style="font-size:.75rem"></textarea>
+    <div class="btns"><button class="alt" data-a="exp">Export</button><button class="alt" data-a="imp">Import</button></div>
+    <button class="ghost" data-a="reset">Reset all progress</button><div id="svMsg" class="sm dim" style="text-align:center"></div>
+    <button data-a="close">Close</button>`;
+  return '';
+}
+/* ---- events ---- */
+document.addEventListener('pointerdown',e=>{
+  const b=e.target.closest('[data-a="mg"]');if(!b||b.disabled)return;
+  e.preventDefault();mgTap(b.dataset.v);
+});
+document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate)S.fate.name=e.target.value.trim().slice(0,18)});
+document.addEventListener('change',e=>{if(e.target.id==='drill'){S.P.drill=e.target.value;save();render()}});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
+  const a=b.dataset.a,v=b.dataset.v;
+  if(a==='mg'||a==='drill')return;
+  switch(a){
+    case 'tab':tab=v;$('view').scrollTop=0;break;
+    case 'ctab':ctab=v;break;
+    case 'spin':if(spin(v))flashCat=v;break;
+    case 'rname':S.fate.name=pick(FIRST);break;
+    case 'modal':modal=v;break;
+    case 'close':modal=null;break;
+    case 'exact':chooseExact(ctab,v);modal=null;flashCat=ctab;break;
+    case 'begin':modal=null;beginLife(v);break;
+    case 'leg':buyLegacy(v);break;
+    case 'train':MG=null;startTrain(v);break;
+    case 'mgclose':MG=null;break;
+    case 'tier':upgradeTier(v);break;
+    case 'work':workJob(v);break;
+    case 'rest':rest();break;
+    case 'healer':healer();break;
+    case 'drink':drink(v);break;
+    case 'pot':buyPot(v);break;
+    case 'gear':buyGear(v);break;
+    case 'fight':{const [k,r]=v.split(':');startFight(k,r);break}
+    case 'act':{const [k,r]=v.split(':');act(k,k==='skill'?+r:r);break}
+    case 'leave':C=null;break;
+    case 'again':{const r=C.ref;C=null;startFight('region',r);break}
+    case 'rebirth':modal='reb';break;
+    case 'dorebirth':modal=null;rebirth();ctab='race';break;
+    case 'assist':S.assist[v]=!S.assist[v];break;
+    case 'exp':{const code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));$('sv').value=code;$('sv').select();
+      try{navigator.clipboard.writeText(code).then(()=>$('svMsg').textContent='Copied to clipboard.').catch(()=>{$('svMsg').textContent='Select the code and copy it.'})}catch(x){$('svMsg').textContent='Select the code and copy it.'}
+      return}
+    case 'imp':try{const o=JSON.parse(decodeURIComponent(escape(atob($('sv').value.trim()))));if(!o||o.v!==3)throw 0;S=o;S.assist=S.assist||{};C=null;MG=null;modal=null;save()}catch(x){$('svMsg').textContent='That code did not work. Check it was copied in full.';return}break;
+    case 'reset':if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to erase everything';return}
+      try{localStorage.removeItem(KEY)}catch(x){}freshSave();C=null;MG=null;modal=null;tab='you';break;
+  }
+  save();render();
+});
+function boot(){
+  if(!load())freshSave();
+  const msg=offline();
+  render();if(msg)toast(msg);
+  let last=performance.now();
+  setInterval(()=>{const n=performance.now(),dt=Math.min(5,(n-last)/1000);last=n;tick(dt);hudLive();
+    const te=$('tE');if(te&&S.P)te.textContent=`Energy ${S.P.energy}/${maxEnergy()}`;const we=$('wE');if(we&&S.P)we.textContent=`${S.P.energy}/${maxEnergy()}`},250);
+  setInterval(save,10000);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+}
+boot();
+</script>
