@@ -1,5 +1,7 @@
 # Lineage of the Vigil
 
+Repository: LEGACY-OF-V
+
 A text-based fantasy progression RPG that runs in the browser. Roll your fate, train through mini-games, fight tactical turn-based battles, climb the ranks of the Vigil and rebirth for permanent upgrades.
 
 **Play:** open `index.html` in a browser. Progress saves in that browser's local storage; use Settings → Export to back it up.
