@@ -204,3 +204,22 @@ test('saved pending events and deaths remain resolvable after reload and inherit
   assert.equal(g.run('load()'),true);
   assert.doesNotThrow(()=>g.run('render()'));
 });
+
+test('saves from before the Work tab and out-of-range bonds still load',()=>{
+  const g=game();
+  g.run("delete S.P.jobs;delete S.P.wins;meet('friend');S.P.people[S.P.people.length-1].bond=-12;");
+  const snap=g.run('JSON.stringify(S)');
+  g.run('freshSave()');
+  assert.equal(g.run(`restoreSave(JSON.parse(${JSON.stringify(snap)}))`),true);
+  assert.deepEqual(JSON.parse(g.run('JSON.stringify(S.P.jobs)')),{});
+  assert.equal(g.run('Math.min(...S.P.people.map(p=>p.bond))>=0'),true);
+});
+test('an unreadable stored save is backed up before starting fresh',()=>{
+  const g=game();
+  g.storage.set('vigil_save_v3','{"v":3,"phase":"play","P":{"broken":true}}');
+  assert.equal(g.run('load()'),false);
+  assert.equal(g.run('loadFailed'),true);
+  const backups=[...g.storage.keys()].filter(k=>k.startsWith('vigil_save_v3_backup_'));
+  assert.equal(backups.length,1);
+  assert.equal(g.storage.get(backups[0]),'{"v":3,"phase":"play","P":{"broken":true}}');
+});

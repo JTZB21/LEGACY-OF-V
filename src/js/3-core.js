@@ -170,6 +170,13 @@ function restoreSave(o){
   const previous=S,record=x=>x&&typeof x==='object'&&!Array.isArray(x),num=x=>Number.isFinite(x)&&x>=0;
   const nums=x=>record(x)&&Object.values(x).every(num),fate=x=>record(x)&&CATS.every(([k,,list])=>byId(list,x[k]));
   try{
+    // Fill containers that older saves never had, and clamp bonds, instead of rejecting the save.
+    if(record(o)&&record(o.P)){const P=o.P;
+      ['mast','tier','jobs','bosses','streak','pot'].forEach(k=>{if(!record(P[k]))P[k]={}});
+      ['owned','titles','log'].forEach(k=>{if(!Array.isArray(P[k]))P[k]=[]});
+      if(!num(P.wins))P.wins=0;
+      if(Array.isArray(P.people))P.people.forEach(p=>{if(record(p)&&Number.isFinite(p.bond))p.bond=clamp(p.bond,0,100)});
+    }
     if(!o||o.v!==3||!['create','play'].includes(o.phase)||!num(o.merit)||!num(o.lives)||!nums(o.lp)||!Array.isArray(o.hall)||!record(o.codex)||!CATS.every(([k])=>record(o.codex[k])))throw 0;
     if(!fate(o.fate)||typeof o.fate.name!=='string'||!nums(o.fate.spins)||!CATS.every(([k])=>num(o.fate.spins[k])))throw 0;
     // Reserve levels above three are valid in older saves, up to the old cap.
@@ -193,7 +200,12 @@ function restoreSave(o){
     return true;
   }catch(e){S=previous;return false}
 }
-function load(){try{const r=localStorage.getItem(KEY);return !!r&&restoreSave(JSON.parse(r))}catch(e){return false}}
+let loadFailed=false;
+/* If a stored save cannot be read, keep a copy before the game starts fresh, so autosave never destroys it. */
+function load(){let r=null;
+  try{r=localStorage.getItem(KEY);if(!r)return false;if(restoreSave(JSON.parse(r)))return true}catch(e){}
+  try{localStorage.setItem(KEY+'_backup_'+Date.now(),r);loadFailed=true}catch(e){}
+  return false}
 function migrate(){
   if(S.fate&&!S.fate.gender)S.fate.gender='Male';
   if(S.rtMode==null)S.rtMode='ask';

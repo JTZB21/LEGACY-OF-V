@@ -190,6 +190,7 @@ document.addEventListener('click',e=>{
 });
 function boot(){
   if(!load())freshSave();
+  if(loadFailed)setTimeout(()=>toast('Your previous save could not be read. A backup copy was kept in this browser.'),300);
   const msg=offline();
   render();if(msg)toast(msg);
   if(S.refund){toast(`Energy upgrades changed. Refunded ${S.refund} Merit for Deep Reserves levels above 3.`);delete S.refund;save()}
