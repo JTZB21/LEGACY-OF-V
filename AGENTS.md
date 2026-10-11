@@ -7,7 +7,7 @@
 - Visual direction (the owner's choice): black background, gold borders, crimson buttons, parchment log panels; Cinzel for the logo, Montserrat for UI. Must work at phone width (~400px).
 - The setting is original. Don't use names, places or terms from existing anime or games.
 - No pay-to-win: paid-pass style effects exist only as free optional toggles in Settings → Assists.
-- Balance: enemy stats mirror player formulas so an enemy at CC X is an even match for a player at CC X. Regular enemies use 0.5x HP; bosses have per-boss HP multipliers. Re-check win rates with a headless simulation after changing combat numbers.
+- Balance: enemy stats mirror player formulas so an enemy at CC X is an even match for a player at CC X. Regular enemies use 0.5x HP; bosses have per-boss HP multipliers, and their rank lock, Merit reward and attack bonus all come from CC (bossRank, bossMerit in 2-data-progression.js), so the list can grow in any order. Target: about 20-60% wins at the listed CC, 95%+ at 1.3x. Re-check win rates with a headless simulation after changing combat numbers.
 - The live artifact is published from `dist/artifact.html`.
 - Age gates live in `3-life.js`: training 3, fighting 6, work 10 (rank jobs 16), bosses and trials 12, adulthood 18. Multi-year age-ups skip events on purpose.
 - Glob order matters: files sort by name, so keep the numeric prefixes (e.g. `2-data-life.js` loads before `2-data-progression.js`, `3-core.js` before `3-life.js`).

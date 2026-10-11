@@ -23,7 +23,7 @@ function startFight(kind,ref){
     foe=makeFoe(f[0],f[1],r.cc*(1+.06*sk),.5,.85);
   }else if(kind==='boss'){
     const b=byId(BOSSES,ref);cost=2;
-    foe=makeFoe(b.n,b.a,b.cc,b.hp,1.05+BOSSES.indexOf(b)*.04,b.i);foe.boss=true;
+    foe=makeFoe(b.n,b.a,b.cc,b.hp,1.05+Math.min(.35,b.cc/5700),b.i);foe.boss=true;
   }else if(kind==='trial'){
     const nx=RANKS[P.rank+1];cost=2;
     foe=makeFoe('Vigil Examiner','duel',nx.cc,1.1,.95);foe.boss=true;
@@ -146,11 +146,11 @@ function endFight(res){
       if(Math.random()<.04){S.merit++;rew.push('+1 Merit')}
       if(Math.random()<.15){P.pot.hp=(P.pot.hp||0)+1;rew.push('found a Healing Draught')}
     }else if(C.kind==='boss'){
-      const b=byId(BOSSES,C.ref),i=BOSSES.indexOf(b),first=!P.bosses[b.id];
+      const b=byId(BOSSES,C.ref),first=!P.bosses[b.id];
       const g=Math.round(cc*(first?12:4)*goldMult()),x=cc*.4;
       P.gold+=g;addRxp(x);STK.forEach(k=>P.raw[k]+=cc*.02);
       rew.push(`+${fmt(g)} gold`,`+${Math.round(x*xpMult())} race XP`,`+${(cc*.02).toFixed(1)} to every stat`);
-      if(first){const m=10+i*8;S.merit+=m;P.bosses[b.id]=1;P.titles.push(b.title);rew.push(`+${m} Merit`,`Title: ${b.title}`);say(`You defeat ${b.n} and earn the title ${b.title}.`)}
+      if(first){const m=bossMerit(b);S.merit+=m;P.bosses[b.id]=1;P.titles.push(b.title);rew.push(`+${m} Merit`,`Title: ${b.title}`);say(`You defeat ${b.n} and earn the title ${b.title}.`)}
     }else if(C.kind==='trial'){
       P.rank++;const g=Math.round(RANKS[P.rank].cc*5*goldMult());P.gold+=g;
       rew.push(`Promoted to ${RANKS[P.rank].n}`,`+${fmt(g)} gold`,'+5% to every stat');say(`You pass the trial and are named ${RANKS[P.rank].n}.`);

@@ -357,14 +357,23 @@ const REGIONS=[
 ];
 const BOSSES=[
  {id:'matriarch',n:'Bramble Matriarch',cc:45,hp:1.7,a:'caster',i:{strike:3,spell:3,heal:1,heavy:1},d:'Mother of the Whisperwood thickets.',title:'Thornbreaker'},
+ {id:'rootbellwidow',n:'The Rootbell Widow',cc:70,hp:2.4,a:'swift',i:{flurry:3,strike:2,drain:1,heavy:1},d:'A hollow-backed hunter rings stolen bells to lure travellers into Whisperwood.',title:'Bellsilencer'},
  {id:'golemking',n:'Cinder Golem King',cc:100,hp:1.8,a:'tank',i:{heavy:3,charge:2,guard:2,strike:2},d:'A furnace given a crown.',title:'Kingsmelter'},
+ {id:'slagboundassayer',n:'The Slagbound Assayer',cc:140,hp:1.9,a:'brute',i:{heavy:3,guard:2,charge:2,strike:2},d:'An abandoned ore inspector seals living miners inside metal shells in the Ashen Mines.',title:'Slagbreaker'},
  {id:'captain',n:'The Drowned Captain',cc:180,hp:1.8,a:'duel',i:{strike:3,heavy:2,drain:2,guard:1},d:'He still commands a crew of corpses.',title:'Tidebreaker'},
+ {id:'siltlungcantor',n:'The Siltlung Cantor',cc:240,hp:1.6,a:'caster',i:{spell:3,drain:2,heal:1,guard:1},d:'A buried singer draws breath from intruders to finish a hymn beneath the Drowned Crypt.',title:'Hymnender'},
  {id:'roc',n:'Storm Roc Empress',cc:300,hp:2.8,a:'swift',i:{flurry:3,spell:2,charge:1,strike:2},d:'Her wings carry the thunder.',title:'Skyfeller'},
+ {id:'vasktheunroped',n:'Vask the Unroped',cc:390,hp:3.1,a:'duel',i:{strike:3,flurry:2,guard:2,heavy:1},d:'A disgraced bridge keeper cuts every safety rope before challenging climbers in the Skyward Spires.',title:'Spanclaimer'},
  {id:'regent',n:'The Pale Regent',cc:480,hp:2.7,a:'caster',i:{spell:3,drain:2,guard:1,charge:1},d:'Ruler of the Voidmarch\'s silent court.',title:'Regicide'},
+ {id:'theburdenherd',n:'The Burden Herd',cc:620,hp:2.3,a:'brute',i:{charge:3,heavy:3,strike:2,heal:1},d:'Discarded pack beasts share one vast body that still follows a vanished supply road through the Voidmarch.',title:'Burdenender'},
  {id:'stareater',n:'Star-eater',cc:780,hp:3,a:'brute',i:{heavy:3,charge:2,strike:2,heal:1},d:'It swallowed three constellations.',title:'Starsaver'},
  {id:'paragon',n:'The Fallen Paragon',cc:1250,hp:3.3,a:'duel',i:{strike:3,heavy:2,spell:2,charge:1,heal:1},d:'Once the greatest of the Vigil.',title:'Oathkeeper'},
- {id:'herald',n:'Herald of Oblivion',cc:2000,hp:3.8,a:'caster',i:{spell:3,drain:2,charge:2,heavy:1},d:'The end of all things, wearing a mask.',title:'Last Light'}
+ {id:'herald',n:'Herald of Oblivion',cc:2000,hp:3.8,a:'caster',i:{spell:3,drain:2,charge:2,heavy:1},d:'The end of all things, wearing a mask.',title:'Last Light'},
+ {id:'thelastinhabitant',n:'The Last Inhabitant',cc:3000,hp:3.1,a:'caster',i:{spell:3,heavy:2,drain:3,guard:2,heal:1},d:'Deep in the Last Abyss, a lone figure feeds an empty city with the years stolen from its visitors.',title:'Yearreclaimer'}
 ];
+/* rank needed to challenge a boss, from its CC */
+const bossRank=b=>b.cc<60?0:b.cc<120?1:b.cc<220?2:b.cc<400?3:b.cc<700?4:b.cc<1500?5:6;
+const bossMerit=b=>Math.round(8+Math.sqrt(b.cc)*1.8);
 const GEAR=[
  {id:'iron',n:'Iron Sword',s:'w',b:.10,c:120},{id:'longsword',n:'Knight\'s Longsword',s:'w',b:.22,c:700},
  {id:'hammer',n:'Warhammer',s:'w',b:.35,c:3000},{id:'spear',n:'Runed Spear',s:'w',b:.5,c:10000},
@@ -782,7 +791,7 @@ function startFight(kind,ref){
     foe=makeFoe(f[0],f[1],r.cc*(1+.06*sk),.5,.85);
   }else if(kind==='boss'){
     const b=byId(BOSSES,ref);cost=2;
-    foe=makeFoe(b.n,b.a,b.cc,b.hp,1.05+BOSSES.indexOf(b)*.04,b.i);foe.boss=true;
+    foe=makeFoe(b.n,b.a,b.cc,b.hp,1.05+Math.min(.35,b.cc/5700),b.i);foe.boss=true;
   }else if(kind==='trial'){
     const nx=RANKS[P.rank+1];cost=2;
     foe=makeFoe('Vigil Examiner','duel',nx.cc,1.1,.95);foe.boss=true;
@@ -905,11 +914,11 @@ function endFight(res){
       if(Math.random()<.04){S.merit++;rew.push('+1 Merit')}
       if(Math.random()<.15){P.pot.hp=(P.pot.hp||0)+1;rew.push('found a Healing Draught')}
     }else if(C.kind==='boss'){
-      const b=byId(BOSSES,C.ref),i=BOSSES.indexOf(b),first=!P.bosses[b.id];
+      const b=byId(BOSSES,C.ref),first=!P.bosses[b.id];
       const g=Math.round(cc*(first?12:4)*goldMult()),x=cc*.4;
       P.gold+=g;addRxp(x);STK.forEach(k=>P.raw[k]+=cc*.02);
       rew.push(`+${fmt(g)} gold`,`+${Math.round(x*xpMult())} race XP`,`+${(cc*.02).toFixed(1)} to every stat`);
-      if(first){const m=10+i*8;S.merit+=m;P.bosses[b.id]=1;P.titles.push(b.title);rew.push(`+${m} Merit`,`Title: ${b.title}`);say(`You defeat ${b.n} and earn the title ${b.title}.`)}
+      if(first){const m=bossMerit(b);S.merit+=m;P.bosses[b.id]=1;P.titles.push(b.title);rew.push(`+${m} Merit`,`Title: ${b.title}`);say(`You defeat ${b.n} and earn the title ${b.title}.`)}
     }else if(C.kind==='trial'){
       P.rank++;const g=Math.round(RANKS[P.rank].cc*5*goldMult());P.gold+=g;
       rew.push(`Promoted to ${RANKS[P.rank].n}`,`+${fmt(g)} gold`,'+5% to every stat');say(`You pass the trial and are named ${RANKS[P.rank].n}.`);
@@ -1183,10 +1192,10 @@ function vAdv(){
 function vBoss(){
   const P=S.P,cc=combatClass();
   if(P.age<AGE_TRIAL)return lockCard(AGE_TRIAL,'Bosses','The great monsters of the realm are no place for a child.');
-  return `<div class="grid">${BOSSES.map((b,i)=>{const lock=P.rank<Math.min(i,6),done=P.bosses[b.id];
+  return `<div class="grid">${BOSSES.map((b,i)=>{const lock=P.rank<bossRank(b),done=P.bosses[b.id];
     return `<div class="card ${lock?'lock':''}"><div class="t">${b.n}</div><div class="d">${b.d}</div>
-    <div class="meta"><span style="color:${cc>=b.cc*1.2?'var(--st)':cc>=b.cc*.9?'var(--gold2)':'var(--hp)'}">Boss CC ${b.cc}</span> · ${done?`Defeated · ${b.title}`:`First kill: ${10+i*8} Merit, title ${b.title}`}</div>
-    <button data-a="fight" data-v="boss:${b.id}" ${lock?'disabled':'data-ce="2"'}>${lock?`Requires ${RANKS[Math.min(i,6)].n}`:'Challenge · 2 energy'}</button></div>`}).join('')}
+    <div class="meta"><span style="color:${cc>=b.cc*1.2?'var(--st)':cc>=b.cc*.9?'var(--gold2)':'var(--hp)'}">Boss CC ${b.cc}</span> · ${done?`Defeated · ${b.title}`:`First kill: ${bossMerit(b)} Merit, title ${b.title}`}</div>
+    <button data-a="fight" data-v="boss:${b.id}" ${lock?'disabled':'data-ce="2"'}>${lock?`Requires ${RANKS[bossRank(b)].n}`:'Challenge · 2 energy'}</button></div>`}).join('')}
   <div class="card"><h2>Boss tips</h2><div class="d">Bosses telegraph their next move. Block heavy blows and anything marked UNLEASH. Below half HP they enter a frenzy. Bosses resist stuns half the time. Aim for about 20% more CC than the boss.</div></div></div>`;
 }
 function vArm(){

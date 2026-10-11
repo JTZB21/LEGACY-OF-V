@@ -170,10 +170,10 @@ function vAdv(){
 function vBoss(){
   const P=S.P,cc=combatClass();
   if(P.age<AGE_TRIAL)return lockCard(AGE_TRIAL,'Bosses','The great monsters of the realm are no place for a child.');
-  return `<div class="grid">${BOSSES.map((b,i)=>{const lock=P.rank<Math.min(i,6),done=P.bosses[b.id];
+  return `<div class="grid">${BOSSES.map((b,i)=>{const lock=P.rank<bossRank(b),done=P.bosses[b.id];
     return `<div class="card ${lock?'lock':''}"><div class="t">${b.n}</div><div class="d">${b.d}</div>
-    <div class="meta"><span style="color:${cc>=b.cc*1.2?'var(--st)':cc>=b.cc*.9?'var(--gold2)':'var(--hp)'}">Boss CC ${b.cc}</span> · ${done?`Defeated · ${b.title}`:`First kill: ${10+i*8} Merit, title ${b.title}`}</div>
-    <button data-a="fight" data-v="boss:${b.id}" ${lock?'disabled':'data-ce="2"'}>${lock?`Requires ${RANKS[Math.min(i,6)].n}`:'Challenge · 2 energy'}</button></div>`}).join('')}
+    <div class="meta"><span style="color:${cc>=b.cc*1.2?'var(--st)':cc>=b.cc*.9?'var(--gold2)':'var(--hp)'}">Boss CC ${b.cc}</span> · ${done?`Defeated · ${b.title}`:`First kill: ${bossMerit(b)} Merit, title ${b.title}`}</div>
+    <button data-a="fight" data-v="boss:${b.id}" ${lock?'disabled':'data-ce="2"'}>${lock?`Requires ${RANKS[bossRank(b)].n}`:'Challenge · 2 energy'}</button></div>`}).join('')}
   <div class="card"><h2>Boss tips</h2><div class="d">Bosses telegraph their next move. Block heavy blows and anything marked UNLEASH. Below half HP they enter a frenzy. Bosses resist stuns half the time. Aim for about 20% more CC than the boss.</div></div></div>`;
 }
 function vArm(){

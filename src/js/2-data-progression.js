@@ -39,14 +39,23 @@ const REGIONS=[
 ];
 const BOSSES=[
  {id:'matriarch',n:'Bramble Matriarch',cc:45,hp:1.7,a:'caster',i:{strike:3,spell:3,heal:1,heavy:1},d:'Mother of the Whisperwood thickets.',title:'Thornbreaker'},
+ {id:'rootbellwidow',n:'The Rootbell Widow',cc:70,hp:2.4,a:'swift',i:{flurry:3,strike:2,drain:1,heavy:1},d:'A hollow-backed hunter rings stolen bells to lure travellers into Whisperwood.',title:'Bellsilencer'},
  {id:'golemking',n:'Cinder Golem King',cc:100,hp:1.8,a:'tank',i:{heavy:3,charge:2,guard:2,strike:2},d:'A furnace given a crown.',title:'Kingsmelter'},
+ {id:'slagboundassayer',n:'The Slagbound Assayer',cc:140,hp:1.9,a:'brute',i:{heavy:3,guard:2,charge:2,strike:2},d:'An abandoned ore inspector seals living miners inside metal shells in the Ashen Mines.',title:'Slagbreaker'},
  {id:'captain',n:'The Drowned Captain',cc:180,hp:1.8,a:'duel',i:{strike:3,heavy:2,drain:2,guard:1},d:'He still commands a crew of corpses.',title:'Tidebreaker'},
+ {id:'siltlungcantor',n:'The Siltlung Cantor',cc:240,hp:1.6,a:'caster',i:{spell:3,drain:2,heal:1,guard:1},d:'A buried singer draws breath from intruders to finish a hymn beneath the Drowned Crypt.',title:'Hymnender'},
  {id:'roc',n:'Storm Roc Empress',cc:300,hp:2.8,a:'swift',i:{flurry:3,spell:2,charge:1,strike:2},d:'Her wings carry the thunder.',title:'Skyfeller'},
+ {id:'vasktheunroped',n:'Vask the Unroped',cc:390,hp:3.1,a:'duel',i:{strike:3,flurry:2,guard:2,heavy:1},d:'A disgraced bridge keeper cuts every safety rope before challenging climbers in the Skyward Spires.',title:'Spanclaimer'},
  {id:'regent',n:'The Pale Regent',cc:480,hp:2.7,a:'caster',i:{spell:3,drain:2,guard:1,charge:1},d:'Ruler of the Voidmarch\'s silent court.',title:'Regicide'},
+ {id:'theburdenherd',n:'The Burden Herd',cc:620,hp:2.3,a:'brute',i:{charge:3,heavy:3,strike:2,heal:1},d:'Discarded pack beasts share one vast body that still follows a vanished supply road through the Voidmarch.',title:'Burdenender'},
  {id:'stareater',n:'Star-eater',cc:780,hp:3,a:'brute',i:{heavy:3,charge:2,strike:2,heal:1},d:'It swallowed three constellations.',title:'Starsaver'},
  {id:'paragon',n:'The Fallen Paragon',cc:1250,hp:3.3,a:'duel',i:{strike:3,heavy:2,spell:2,charge:1,heal:1},d:'Once the greatest of the Vigil.',title:'Oathkeeper'},
- {id:'herald',n:'Herald of Oblivion',cc:2000,hp:3.8,a:'caster',i:{spell:3,drain:2,charge:2,heavy:1},d:'The end of all things, wearing a mask.',title:'Last Light'}
+ {id:'herald',n:'Herald of Oblivion',cc:2000,hp:3.8,a:'caster',i:{spell:3,drain:2,charge:2,heavy:1},d:'The end of all things, wearing a mask.',title:'Last Light'},
+ {id:'thelastinhabitant',n:'The Last Inhabitant',cc:3000,hp:3.1,a:'caster',i:{spell:3,heavy:2,drain:3,guard:2,heal:1},d:'Deep in the Last Abyss, a lone figure feeds an empty city with the years stolen from its visitors.',title:'Yearreclaimer'}
 ];
+/* rank needed to challenge a boss, from its CC */
+const bossRank=b=>b.cc<60?0:b.cc<120?1:b.cc<220?2:b.cc<400?3:b.cc<700?4:b.cc<1500?5:6;
+const bossMerit=b=>Math.round(8+Math.sqrt(b.cc)*1.8);
 const GEAR=[
  {id:'iron',n:'Iron Sword',s:'w',b:.10,c:120},{id:'longsword',n:'Knight\'s Longsword',s:'w',b:.22,c:700},
  {id:'hammer',n:'Warhammer',s:'w',b:.35,c:3000},{id:'spear',n:'Runed Spear',s:'w',b:.5,c:10000},
