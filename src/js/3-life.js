@@ -100,10 +100,10 @@ function haveChild(sp){
 function defaultRoutine(){return {train:'boulder',tN:6,job:'best',wN:4,rN:2,social:true}}
 function bestJob(){let b=null;JOBS.forEach(j=>{if(jobOpen(j)&&(!b||jobPay(j)>jobPay(b)))b=j});return b}
 function routineJob(){const P=S.P,rt=P.rt;if(rt.job!=='best'){const j=byId(JOBS,rt.job);if(j&&jobOpen(j))return j}return bestJob()}
-function split(ap,w){const tot=w.reduce((a,b)=>a+b,0)||1,raw=w.map(x=>x/tot*ap),out=raw.map(Math.floor);
+function split(ap,w){const tot=w.reduce((a,b)=>a+b,0);if(!tot)return w.map(()=>0);const raw=w.map(x=>x/tot*ap),out=raw.map(Math.floor);
   let left=ap-out.reduce((a,b)=>a+b,0);raw.map((x,i)=>[x-out[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){out[i]++;left--}});return out}
 function runRoutine(ap){
-  const P=S.P,rt=P.rt||(P.rt=defaultRoutine());if(ap<=0||P.age<AGE_TRAIN)return '';
+  const P=S.P,rt=P.rt||(P.rt=defaultRoutine());if(P.age<AGE_TRAIN)return '';
   let [t,w,r]=split(ap,[rt.tN,rt.wN,rt.rN]);
   const job=P.age>=AGE_WORK?routineJob():null;if(!job){t+=w;w=0}
   const tr=byId(TRAIN,rt.train)||TRAIN[0];
@@ -113,7 +113,7 @@ function runRoutine(ap){
   for(let i=0;i<w;i++){P.gold+=jobPay(job);P.raw[job.st]+=.3*learnMult();P.jobs[job.id]=(P.jobs[job.id]||0)+1}
   let soc=0;
   if(rt.social){const ppl=P.people.filter(p=>p.alive&&p.kind!=='rival').sort((a,b)=>a.bond-b.bond);
-    while(P.acts>0&&ppl.length){const p=ppl[soc%ppl.length];p.bond=Math.min(100,p.bond+10);P.acts--;soc++;ppl.sort((a,b)=>a.bond-b.bond)}}
+    while(P.acts>0&&ppl.length){const p=ppl[0];p.bond=Math.min(100,p.bond+10);P.acts--;soc++;ppl.sort((a,b)=>a.bond-b.bond)}}
   P.energy=0;
   const parts=[t?`${t} ${tr.n} (+${(P.raw[tr.st]-st0).toFixed(1)} ${STN[tr.st]})`:'',w?`${w} ${job.n} shifts (+${fmt(P.gold-g0)} gold)`:'',rests?`${rests} rest`:'',soc?`${soc} visits`:''].filter(Boolean);
   return parts.length?`Routine: ${parts.join(', ')}.`:'';

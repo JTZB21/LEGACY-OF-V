@@ -64,3 +64,28 @@ test('character names remain text in creation, death, history and inherited name
   assert.ok(!g.run('vYou()').includes('<!--'));
   assert.ok(!g.run('vModal()').includes('<!--'));
 });
+
+test('zero routine weights do not invent training, work or recovery',()=>{
+  const g=game();
+  g.run("S.P.rt={...defaultRoutine(),tN:0,wN:0,rN:0,social:false};S.P.hp=1;S.P.mp=1;");
+  const before=g.run('JSON.stringify([S.P.raw,S.P.gold,S.P.hp,S.P.mp,S.P.jobs])');
+  assert.equal(g.run('runRoutine(12)'), '');
+  assert.equal(g.run('JSON.stringify([S.P.raw,S.P.gold,S.P.hp,S.P.mp,S.P.jobs])'),before);
+});
+
+test('routine keeps up the weakest bonds after all activity points are spent',()=>{
+  const g=game();
+  g.run("S.P.energy=0;S.P.acts=4;S.P.people=[person({name:'A',kind:'friend',bond:10}),person({name:'B',kind:'friend',bond:90})];");
+  assert.match(g.run('runRoutine(0)'),/4 visits/);
+  assert.equal(g.run('S.P.people[0].bond'),50);
+  assert.equal(g.run('S.P.people[1].bond'),90);
+  assert.equal(g.run('S.P.acts'),0);
+  assert.equal(g.run('S.P.energy'),0);
+});
+
+test('nonzero routine weights allocate exactly the available activity points',()=>{
+  const g=game();
+  for(const weights of ['[6,4,2]','[0,0,2]','[1,1,1]','[15,1,0]']) {
+    for(let ap=0;ap<=21;ap++) assert.equal(g.run(`split(${ap},${weights}).reduce((a,b)=>a+b,0)`),ap);
+  }
+});
