@@ -10,7 +10,7 @@ function game() {
   const listeners = {};
   const storage = new Map();
   const node = id => {
-    if (!nodes.has(id)) nodes.set(id, {hidden:true, innerHTML:'', textContent:'', value:'', scrollTop:0, contains:b=>b.inOverlay});
+    if (!nodes.has(id)) nodes.set(id, {hidden:true, innerHTML:'', textContent:'', value:'', scrollTop:0, style:{}, contains:b=>b.inOverlay});
     return nodes.get(id);
   };
   const context = vm.createContext({
@@ -133,5 +133,74 @@ test('restore rejects non-finite stats and accepts pre-life-sim saves',()=>{
   assert.equal(g.run("(()=>{const o=JSON.parse(JSON.stringify(S));for(const k of ['age','people','life','acts','rt'])delete o.P[k];return restoreSave(o)})()"),true);
   assert.equal(g.run('S.P.age'),18);
   assert.ok(g.run('S.P.people.length')>=2);
+  assert.doesNotThrow(()=>g.run('render()'));
+});
+
+test('activity costs cannot overdraw and blocked actions do not start',()=>{
+  const g=game();
+  g.run('S.P.energy=1;');
+  assert.equal(g.run('useEnergy(2)'),false);
+  assert.equal(g.run('S.P.energy'),1);
+  assert.equal(g.run('useEnergy(1)'),true);
+  g.run("startTrain('boulder');startFight('spar');rest();workJob('stable');");
+  assert.equal(g.run('S.P.energy'),0);
+  assert.equal(g.run('MG'),null);
+  assert.equal(g.run('C'),null);
+});
+
+test('all yearly choices resolve with finite stats across every race',()=>{
+  const g=game();
+  assert.equal(g.run(`(()=>{
+    Math.random=()=>.5;
+    for(const r of RACES){
+      S.P.race=r.id;
+      for(let i=0;i<EVENTS.length;i++)for(let j=0;j<EVENTS[i].c.length;j++){
+        S.P.age=EVENTS[i].a[0];S.P.ev=i;resolveEvent(j);
+        if(S.P.ev!==null||!STK.every(k=>Number.isFinite(S.P.raw[k]))||!Number.isFinite(S.P.gold))return false;
+      }
+    }
+    return true;
+  })()`),true);
+});
+
+test('training and all magic skills finish without non-finite combat values',()=>{
+  const g=game();
+  assert.equal(g.run(`(()=>{
+    for(const t of TRAIN){S.P.energy=1;startTrain(t.id);mgFinish(.85);if(MG.phase!=='done')return false;MG=null;}
+    for(const m of MAGICS)for(let i=0;i<m.sk.length;i++){
+      S.P.mag=m.id;S.P.mlv=10;S.P.energy=1;startFight('spar');act('skill',i);
+      if(![C.p.hp,C.p.mp,C.p.st,C.foe.hp].every(Number.isFinite)||C.p.mp<0||S.P.energy!==0)return false;
+      C=null;
+    }
+    return STK.every(k=>Number.isFinite(S.P.raw[k]));
+  })()`),true);
+});
+
+test('five and ten year skips preserve finite state and refill the annual budget',()=>{
+  const g=game();
+  g.run('Math.random=()=>.99;S.P.life=1000;S.P.people=[];');
+  for(const n of [5,10]){
+    const age=g.run('S.P.age');
+    g.run(`ageUp(${n},true)`);
+    assert.equal(g.run('S.P.age'),age+n);
+    assert.equal(g.run('S.P.energy'),12);
+    assert.equal(g.run('S.P.ev'),null);
+    assert.equal(g.run('STK.every(k=>Number.isFinite(S.P.raw[k]))'),true);
+  }
+});
+
+test('saved pending events and deaths remain resolvable after reload and inheritance',()=>{
+  const g=game();
+  g.run('S.P.ev=0;save();');
+  assert.equal(g.run('load()'),true);
+  g.click('evc','0');
+  assert.equal(g.run('S.P.ev'),null);
+  g.run("haveChild({name:'Parent',race:S.P.race,bl:S.P.bl,mag:S.P.mag});die();");
+  assert.equal(g.run('load()'),true);
+  const id=g.run('heirs()[0].id');
+  g.click('heir',id);
+  assert.equal(g.run('S.P.dead'),false);
+  assert.equal(g.run('S.P.back'),'heir');
+  assert.equal(g.run('load()'),true);
   assert.doesNotThrow(()=>g.run('render()'));
 });
