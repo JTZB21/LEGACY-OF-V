@@ -113,3 +113,25 @@ test('death screen prevents background training but still permits rebirth',()=>{
   assert.equal(g.run('S.phase'),'create');
   assert.equal(g.node('app').inert,false);
 });
+
+test('invalid imports leave the live game and saved progress untouched',()=>{
+  for(const corrupt of ["o={v:3}","o.P.raw.str=null","o.P.energy=-1","o.P.rank=99","o.P.ev=99999","o.P.tier.boulder=99","o.P.race='missing'","o.P.rt.tN=null"]){
+    const g=game();
+    g.run('save();modal="settings";render();');
+    const before=g.run('JSON.stringify(S)'),saved=g.storage.get('vigil_save_v3');
+    g.node('sv').value=g.run(`(()=>{let o=JSON.parse(JSON.stringify(S));${corrupt};return btoa(unescape(encodeURIComponent(JSON.stringify(o))))})()`);
+    assert.doesNotThrow(()=>g.click('imp'),corrupt);
+    assert.equal(g.run('JSON.stringify(S)'),before,corrupt);
+    assert.equal(g.storage.get('vigil_save_v3'),saved,corrupt);
+    assert.match(g.node('svMsg').textContent,/did not work/);
+  }
+});
+
+test('restore rejects non-finite stats and accepts pre-life-sim saves',()=>{
+  const g=game();
+  assert.equal(g.run('(()=>{const o=JSON.parse(JSON.stringify(S));o.P.raw.str=Infinity;return restoreSave(o)})()'),false);
+  assert.equal(g.run("(()=>{const o=JSON.parse(JSON.stringify(S));for(const k of ['age','people','life','acts','rt'])delete o.P[k];return restoreSave(o)})()"),true);
+  assert.equal(g.run('S.P.age'),18);
+  assert.ok(g.run('S.P.people.length')>=2);
+  assert.doesNotThrow(()=>g.run('render()'));
+});

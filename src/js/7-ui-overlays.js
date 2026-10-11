@@ -182,7 +182,7 @@ document.addEventListener('click',e=>{
     case 'exp':{const code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));$('sv').value=code;$('sv').select();
       try{navigator.clipboard.writeText(code).then(()=>$('svMsg').textContent='Copied to clipboard.').catch(()=>{$('svMsg').textContent='Select the code and copy it.'})}catch(x){$('svMsg').textContent='Select the code and copy it.'}
       return}
-    case 'imp':try{const o=JSON.parse(decodeURIComponent(escape(atob($('sv').value.trim()))));if(!o||o.v!==3)throw 0;S=o;S.assist=S.assist||{};migrate();C=null;MG=null;modal=null;save()}catch(x){$('svMsg').textContent='That code did not work. Check it was copied in full.';return}break;
+    case 'imp':try{const o=JSON.parse(decodeURIComponent(escape(atob($('sv').value.trim()))));if(!restoreSave(o))throw 0;C=null;MG=null;modal=null;save()}catch(x){$('svMsg').textContent='That code did not work. Check it was copied in full.';return}break;
     case 'reset':if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to erase everything';return}
       try{localStorage.removeItem(KEY)}catch(x){}freshSave();C=null;MG=null;modal=null;tab='you';break;
   }
