@@ -10,7 +10,7 @@ function game() {
   const listeners = {};
   const storage = new Map();
   const node = id => {
-    if (!nodes.has(id)) nodes.set(id, {hidden:true, innerHTML:'', textContent:'', value:'', scrollTop:0});
+    if (!nodes.has(id)) nodes.set(id, {hidden:true, innerHTML:'', textContent:'', value:'', scrollTop:0, contains:b=>b.inOverlay});
     return nodes.get(id);
   };
   const context = vm.createContext({
@@ -27,7 +27,7 @@ function game() {
   vm.runInContext(source,context);
   const run=code=>vm.runInContext(code,context);
   run("S.fate.race='human';beginLife(BACKS[0].id);S.P.age=30;S.P.energy=12;");
-  return {run,node,storage,click:(a,v)=>listeners.click.forEach(fn=>fn({target:{closest:()=>({dataset:{a,v},disabled:false})}}))};
+  return {run,node,storage,click:(a,v,inOverlay=true)=>listeners.click.forEach(fn=>fn({target:{closest:()=>({dataset:{a,v},disabled:false,inOverlay})}}))};
 }
 
 test('imports migrate pre-activity saves before rendering Training',()=>{
@@ -88,4 +88,28 @@ test('nonzero routine weights allocate exactly the available activity points',()
   for(const weights of ['[6,4,2]','[0,0,2]','[1,1,1]','[15,1,0]']) {
     for(let ap=0;ap<=21;ap++) assert.equal(g.run(`split(${ap},${weights}).reduce((a,b)=>a+b,0)`),ap);
   }
+});
+
+test('pending events block background actions and restore access after a choice',()=>{
+  const g=game();
+  g.run('S.P.ev=0;render();');
+  assert.equal(g.node('app').inert,true);
+  g.click('train','boulder',false);
+  assert.equal(g.run('MG'),null);
+  assert.equal(g.run('S.P.energy'),12);
+  assert.equal(g.run('S.P.ev'),0);
+  g.click('evc','0');
+  assert.equal(g.run('S.P.ev'),null);
+  assert.equal(g.node('app').inert,false);
+});
+
+test('death screen prevents background training but still permits rebirth',()=>{
+  const g=game();
+  g.run('die();render();');
+  assert.equal(g.node('app').inert,true);
+  g.click('train','boulder',false);
+  assert.equal(g.run('MG'),null);
+  g.click('newlife');
+  assert.equal(g.run('S.phase'),'create');
+  assert.equal(g.node('app').inert,false);
 });

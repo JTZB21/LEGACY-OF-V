@@ -1329,6 +1329,7 @@ function renderOv(){
   const o=$('ov');
   let h='';
   if(C)h=vCombat();else if(MG)h=vMG();else if(S.phase==='play'&&S.P&&S.P.dead)h=vDeath();else if(S.phase==='play'&&S.P&&S.P.ev!=null)h=vEvent();else if(modal)h=vModal();
+  $('app').inert=!!h;
   if(!h){o.hidden=true;o.innerHTML='';return}
   o.hidden=false;o.innerHTML=`<div class="box" ${C?'style="max-width:620px"':''}>${h}</div>`;
   if(MG)mgUpdate();
@@ -1453,6 +1454,7 @@ document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate)S.fate.na
 document.addEventListener('change',e=>{const id=e.target.id,v=e.target.value;if(id==='rtT'){S.P.rt.train=v;save()}if(id==='rtJ'){S.P.rt.job=v;save()}if(id==='rtM'){S.rtMode=v;save()}if(e.target.id==='romp'){S.romance=e.target.value;save()}});
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
+  if(!$('ov').hidden&&!$('ov').contains(b))return;
   const a=b.dataset.a,v=b.dataset.v;
   if(a==='mg')return;
   switch(a){
