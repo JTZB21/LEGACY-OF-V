@@ -14,14 +14,18 @@ A text-based fantasy progression RPG that runs in the browser. Roll your fate, t
 - **Combat:** turn-based with HP, mana and stamina; enemies telegraph moves; block, dodge, heavy blows and magic skills
 - **7 regions, 8 bosses, 6 rank trials, an armory and potions**
 - **Rebirth:** end a life for Merit, which buys permanent upgrades; a codex rewards first-time discoveries
+- **Life simulation:** age up year by year (1x/5x/10x), life stages and race lifespans, yearly choice events, family, friends, rivals, mentors, romance, marriage, children, death and continuing as your heir
+- **Male or female characters**, with a romance preference setting
 - **Optional assists** in Settings (auto training, 2x gains, time skip, god mode). No paid features.
 
 ## Project layout
 ```
 src/shell.html               page title, fonts, CSS and HTML skeleton
 src/js/1-data-fate.js        rarities, races, bloodlines, magics, traits, backstories
+src/js/2-data-life.js         yearly life events and relationship labels
 src/js/2-data-progression.js training, ranks, enemies, regions, bosses, gear, legacy, jobs
 src/js/3-core.js             state, stat formulas, fate rolling, training, work, rebirth, save/load
+src/js/3-life.js             aging, family, people, marriage, children, death and heirs
 src/js/4-combat.js           combat engine
 src/js/5-minigames.js        training mini-games
 src/js/6-ui-screens.js       tab screens
@@ -31,6 +35,7 @@ build.sh                     joins src/ into index.html and dist/artifact.html
 Edit files in `src/`, then run `./build.sh`. JS files are concatenated in filename order and share one global scope.
 
 ## Roadmap
-- Life simulation layer: aging, life events, relationships, marriage, children and heirs
+- Rework the energy system
+- More life events
 - More magics (goal: 40+), regions and bosses
 - Character appearance customization

@@ -13,7 +13,7 @@ function bar(cls,v,max,label){
   const pc=clamp(v/max*100,0,100);
   return `<div><div class="blabel"><span>${label}</span><span class="num">${fmt(Math.max(0,v))} / ${fmt(max)}</span></div><div class="bar ${cls}"><i style="width:${pc}%"></i></div></div>`;
 }
-const TABS=[['you','You'],['train','Training'],['work','Work'],['adv','Adventure'],['boss','Bosses'],['arm','Armory'],['leg','Legacy']];
+const TABS=[['you','You'],['ppl','People'],['train','Training'],['work','Work'],['adv','Adventure'],['boss','Bosses'],['arm','Armory'],['leg','Legacy']];
 
 function hud(){
   if(S.phase==='create'){
@@ -27,7 +27,7 @@ function hud(){
   <div class="cur"><span>G <b class="g num" id="hG">${fmt(P.gold)}</b></span><span>M <b class="m num" id="hM">${fmt(S.merit)}</b></span>
   <span>Energy <b class="e num" id="hE">${P.energy}/${maxEnergy()}</b></span>
   <button class="alt" data-a="modal" data-v="settings" style="min-height:30px;padding:3px 10px;font-size:.72rem">Settings</button></div></div>
-  <div class="sm dim">${race().n} · ${magic().n} · ${RANKS[P.rank].n}</div>
+  <div class="hrow" style="margin-top:4px"><span class="sm dim">Age <b style="color:var(--fg)">${P.age}</b> · ${stage()} · ${race().n} · ${RANKS[P.rank].n}</span><span class="btns" style="flex:0 0 auto"><button data-a="age" style="min-height:34px;padding:4px 16px;white-space:nowrap">+ Age</button><button class="alt" data-a="agex" style="min-height:34px;padding:4px 9px" aria-label="Years per age up">${S.ageX||1}x</button></span></div>
   <div class="bars" id="hBars">${hudBars()}</div>`;
 }
 function hudBars(){const P=S.P;return bar('',P.hp,maxHp(),'HP')+bar('mp',P.mp,maxMp(),'Mana')}
@@ -70,6 +70,7 @@ function vCreate(){
     <div class="card">
       <h2>Create your legend</h2>
       <div class="btns"><input id="fname" maxlength="18" value="${f.name}" aria-label="Character name"><button class="alt" data-a="rname" style="flex:0 0 auto">Random</button></div>
+      <div class="btns">${['Male','Female'].map(g=>`<button data-a="gender" data-v="${g}" class="${f.gender===g?'':'alt'}">${g}</button>`).join('')}</div>
       <div class="summary"><div style="text-align:center;font-weight:800;color:var(--crim)">CURRENT FATE</div>
       ${CATS.map(([k,n,l])=>{const x=byId(l,f[k]);return `<div>${n}: <b>${x.n}</b> <span class="pill" style="color:${x.r>=6?'#7a5a00':'var(--crim)'}">${RAR[x.r].n}</span></div>`}).join('')}</div>
       <div class="sm dim">Free spins: ${CATS.map(([k,n])=>`${n} ${A().spins?'∞':f.spins[k]}`).join(' · ')}. After that each spin costs 25 Merit. Rare rolls give potential, not instant victory.</div>
@@ -84,7 +85,7 @@ function vYou(){
   const P=S.P,e=effAll(),st=raceStage(),stg=race().st.split('|'),nx=RACE_XP[st];
   const sk=magic().sk,un=skillsUnlocked(),w=P.wpn&&byId(GEAR,P.wpn),fo=P.foc&&byId(GEAR,P.foc);
   return `<div class="grid">
-  <div class="card"><h2>${P.name}</h2><div class="d">Life ${S.lives} · ${byId(BACKS,P.back).n}</div>
+  <div class="card"><h2>${P.name}</h2><div class="d">${P.gender} · Age ${P.age} (${stage()}) · Lifespan about ${P.life}<br>Generation ${P.gen||1} · ${P.back==='heir'?P.backN:byId(BACKS,P.back).n}</div>
     <div class="kv"><span>Race</span><b>${rtag(race())}</b></div>
     <div class="kv"><span>Bloodline</span><b>${rtag(bl())}</b></div>
     <div class="kv"><span>Innate magic</span><b>${rtag(magic())}</b></div>
@@ -117,8 +118,10 @@ function vYou(){
 }
 
 /* ---- training ---- */
+function lockCard(min,what,why){const P=S.P;return `<div class="card"><div class="t">${what} locked</div><div class="d">${why}</div><div class="meta">Requires age ${min} · you are ${P.age}</div><button data-a="age">+ Age</button></div>`}
 function vTrain(){
   const P=S.P;
+  if(P.age<AGE_TRAIN)return lockCard(AGE_TRAIN,'Training','Young children grow through yearly events before formal training begins. Your stats still rise each year as you grow.');
   return `<div class="col">
   <div class="card"><div class="hrow"><h2 id="tE">Energy ${P.energy}/${maxEnergy()}</h2><span class="sm dim">+1 every ${Math.round(energySec())}s</span></div>
     <div class="btns" style="align-items:center"><span class="sm" style="flex:0 0 auto">Passive drill</span>
@@ -149,6 +152,7 @@ function recoveryCard(){
 }
 function vAdv(){
   const P=S.P,cc=combatClass(),nx=RANKS[P.rank+1];
+  if(P.age<AGE_FIGHT)return lockCard(AGE_FIGHT,'Adventure','You are too young to leave town and fight.');
   return `<div class="grid">${recoveryCard()}
   <div class="card"><h2>Vigil rank: ${RANKS[P.rank].n}</h2>
    ${nx?`<div class="d">Next: ${nx.n}. The examiner fights at CC ${nx.cc}. Each rank gives +5% to every stat and ${nx.sal} gold per second salary.</div>
@@ -165,6 +169,7 @@ function vAdv(){
 }
 function vBoss(){
   const P=S.P,cc=combatClass();
+  if(P.age<AGE_TRIAL)return lockCard(AGE_TRIAL,'Bosses','The great monsters of the realm are no place for a child.');
   return `<div class="grid">${BOSSES.map((b,i)=>{const lock=P.rank<Math.min(i,6),done=P.bosses[b.id];
     return `<div class="card ${lock?'lock':''}"><div class="t">${b.n}</div><div class="d">${b.d}</div>
     <div class="meta"><span style="color:${cc>=b.cc*1.2?'var(--st)':cc>=b.cc*.9?'var(--gold2)':'var(--hp)'}">Boss CC ${b.cc}</span> · ${done?`Defeated · ${b.title}`:`First kill: ${10+i*8} Merit, title ${b.title}`}</div>
@@ -200,12 +205,42 @@ function vLeg(){
 }
 function vWork(){
   const P=S.P,jobs=P.jobs||{};
+  if(P.age<AGE_WORK)return lockCard(AGE_WORK,'Work','Nobody will hire a child yet.');
   return `<div class="col"><div class="card"><h2>Work</h2><div class="d">Each shift costs 1 energy, pays gold based on one stat and trains it a little. Promotions come at ${JOBLV.slice(1).join(', ')} shifts, each +12% pay. Rank raises all pay by 10% per rank.</div>
   <div class="sm" style="text-align:center">Energy <b class="num" id="wE">${P.energy}/${maxEnergy()}</b> · Gold <b class="num">${fmt(P.gold)}</b></div></div>
   <div class="grid">${JOBS.map(j=>{const open=jobOpen(j),lv=jobLv(j.id),n=jobs[j.id]||0,nx=JOBLV[lv+1];
-    const need=[j.rank>P.rank?RANKS[j.rank].n:'',eff(j.st)<j.req?`${j.req} ${STN[j.st]} (you have ${fmt(eff(j.st))})`:''].filter(Boolean).join(' and ');
+    const need=[P.age<jobAge(j)?`age ${jobAge(j)}`:'',j.rank>P.rank?RANKS[j.rank].n:'',eff(j.st)<j.req?`${j.req} ${STN[j.st]} (you have ${fmt(eff(j.st))})`:''].filter(Boolean).join(' and ');
     return `<div class="card ${open?'':'lock'}"><div class="t">${j.n}</div><div class="d">${j.d}</div>
     <div class="meta">${STN[j.st]} · ${open?`${JOBT[lv]} · ${n} shifts${nx?` (next at ${nx})`:''}`:'Locked'}</div>
     ${open?`<button data-a="work" data-v="${j.id}" data-ce="1">Work · +${fmt(jobPay(j))}g</button>`:`<button disabled>Needs ${need}</button>`}</div>`}).join('')}</div></div>`;
 }
-const VIEWS={you:vYou,train:vTrain,work:vWork,adv:vAdv,boss:vBoss,arm:vArm,leg:vLeg};
+
+/* ---- people ---- */
+function vPeople(){
+  const P=S.P,sp=canChild(),gc=giftCost(),noAct=P.acts<=0;
+  const btn=(p,a,l,ok)=>`<button class="alt" data-a="ppl" data-v="${p.id}:${a}" ${ok===false||noAct&&a!=='duel'?'disabled':''} style="min-height:36px;padding:6px 8px;font-size:.72rem">${l}</button>`;
+  const card=p=>{
+    if(!p.alive)return `<div class="kv"><span>${p.name} <span class="dim sm">· ${relName(p)}</span></span><b class="dim sm">Died at ${p.age}</b></div>`;
+    const b=[btn(p,'time','Spend time'),btn(p,'gift',`Gift ${gc}g`,P.gold>=gc)];
+    if(p.kind!=='rival'&&P.age>=AGE_TRAIN)b.push(btn(p,'train',p.kind==='mentor'?'Learn':'Train together'));
+    if(p.kind==='rival'&&P.age>=AGE_FIGHT)b.push(`<button data-a="ppl" data-v="${p.id}:duel" data-ce="1" style="min-height:36px;padding:6px 8px;font-size:.72rem">Duel · 1 energy</button>`);
+    if(p.kind==='romance'&&P.age>=14)b.push(btn(p,'date','Ask out',p.bond>=40));
+    if(p.kind==='partner')b.push(btn(p,'propose','Propose',P.age>=ADULT&&p.bond>=70));
+    if(p.kind==='spouse'&&sp)b.push(btn(p,'child','Try for a child'));
+    if(p.kind!=='family'&&p.kind!=='child')b.push(btn(p,'leave',p.kind==='spouse'?'Divorce':p.kind==='partner'?'Break up':'Drift apart'));
+    const extra=p.kind==='child'?`<div class="sm">${rtag(byId(RACES,p.race))} · ${rtag(byId(BLOODS,p.bl))} · ${rtag(byId(MAGICS,p.mag))} · ${rtag(byId(TRAITS,p.trait))}</div>`
+      :p.kind==='mentor'?`<div class="sm dim">Teaches ${STN[p.st]}</div>`:'';
+    return `<div class="card" style="background:var(--panel2)"><div class="hrow"><b>${p.name}</b><span class="pill" style="color:var(--gold2)">${relName(p)}</span></div>
+      <div class="sm dim">${p.gender} · ${byId(RACES,p.race).n} · Age ${p.age}</div>${extra}
+      ${bar(p.kind==='rival'?'':'xp',p.bond,100,p.kind==='rival'?'Respect':'Bond')}<div class="btns" style="flex-wrap:wrap">${b.join('')}</div></div>`;
+  };
+  const groups=[['Spouse & partner',p=>p.kind==='spouse'||p.kind==='partner'],['Children',p=>p.kind==='child'],['Family',p=>p.kind==='family'],['Friends, rivals & others',p=>['friend','rival','mentor','romance'].includes(p.kind)]];
+  return `<div class="col"><div class="card"><h2>People</h2>
+    <div class="d">Social actions this year: <b class="num" style="color:var(--fg)">${P.acts}/4</b>. They refresh each time you age up. Bonds slowly fade if ignored.</div>
+    <div class="btns"><button data-a="social" ${P.acts<=0||P.age<4?'disabled':''}>Socialize · meet someone</button></div>
+    <div class="btns" style="align-items:center"><span class="sm" style="flex:0 0 auto">Romance with</span><select id="romp" aria-label="Romance preference">${[['opposite','Opposite gender'],['Male','Men'],['Female','Women'],['any','Everyone']].map(([v,l])=>`<option value="${v}" ${(S.romance||'opposite')===v?'selected':''}>${l}</option>`).join('')}</select></div>
+    ${P.age<14?'<div class="sm dim">Romance opens at 14, marriage at 18.</div>':''}</div>
+    ${groups.map(([n,f])=>{const l=P.people.filter(f);return l.length?`<h2 style="margin-top:4px">${n}</h2><div class="grid">${l.filter(p=>p.alive).map(card).join('')}</div>${l.some(p=>!p.alive)?`<div class="card">${l.filter(p=>!p.alive).map(card).join('')}</div>`:''}`:''}).join('')}
+  </div>`;
+}
+const VIEWS={you:vYou,ppl:vPeople,train:vTrain,work:vWork,adv:vAdv,boss:vBoss,arm:vArm,leg:vLeg};

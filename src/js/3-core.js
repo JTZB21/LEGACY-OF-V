@@ -21,7 +21,7 @@ function rollFrom(list){
 }
 function freeSpins(){return 10+(S.lp.favor||0)*2}
 function newFate(){
-  const f={name:pick(FIRST),spins:{},back:null};
+  const g=pick(['Male','Female']),f={name:nameFor(g),gender:g,spins:{},back:null};
   CATS.forEach(([k,,list])=>{f[k]=rollFrom(list);f.spins[k]=freeSpins();discover(k,f[k],true)});
   S.fate=f;S.phase='create';
 }
@@ -55,10 +55,13 @@ function beginLife(backId){
   const raw={};STK.forEach(k=>raw[k]=10+head+(b.raw[k]||0));
   S.P={name:f.name||'Nameless',race:f.race,bl:f.bl,mag:f.mag,trait:f.trait,back:backId,raw,
     mast:{},tier:{},mxp:0,mlv:1,rxp:0,rank:0,gold:b.gold,energy:10,ectr:0,drill:'str',
-    wpn:b.wpn||null,foc:null,owned:b.wpn?[b.wpn]:[],pot:{hp:2,mp:1},jobs:{},bosses:{},titles:[],streak:{},wins:0,log:[],hp:-1,mp:-1};
+    wpn:b.wpn||null,foc:null,owned:b.wpn?[b.wpn]:[],pot:{hp:2,mp:1},jobs:{},bosses:{},titles:[],streak:{},wins:0,log:[],hp:-1,mp:-1,
+    gender:f.gender||'Male',age:0,life:rollLife(f.race),gen:1,acts:4,dead:false,ev:null,people:[]};
+  S.P.people=makeFamily(S.P);
   S.lives++;S.phase='play';tab='you';
   const P=S.P;P.hp=maxHp();P.mp=maxMp();P.energy=maxEnergy();
-  say(`${P.name} begins life as a ${race().n} of the ${bl().n}, wielding ${magic().n} magic.`);
+  const fa=P.people.find(p=>p.rel==='Father'),mo=P.people.find(p=>p.rel==='Mother');
+  say(`${P.name} is born to ${mo.name} and ${fa.name}: a ${race().n} of the ${bl().n}, carrying ${magic().n} magic. Expected lifespan: about ${P.life} years.`);
   say(`Backstory: ${b.n}. Trait: ${trait().n}.`);
   save();
 }
@@ -125,7 +128,8 @@ function rite(score){
   return `Grade ${g[0]}: +${Math.round(x*xpMult())} race XP`;
 }
 function jobLv(id){const n=(S.P.jobs||{})[id]||0;let l=0;JOBLV.forEach((x,i)=>{if(n>=x)l=i});return l}
-function jobOpen(j){return S.P.rank>=j.rank&&eff(j.st)>=j.req}
+function jobAge(j){return j.rank?16:AGE_WORK}
+function jobOpen(j){return S.P.age>=jobAge(j)&&S.P.rank>=j.rank&&eff(j.st)>=j.req}
 function jobPay(j){return Math.round((j.b+eff(j.st)*j.k)*(1+jobLv(j.id)*.12)*(1+S.P.rank*.1)*goldMult())}
 function workJob(id){
   const P=S.P,j=byId(JOBS,id);if(!j||!jobOpen(j)||!useEnergy(1))return;
@@ -149,10 +153,7 @@ function buyLegacy(id){const u=byId(LEGACY,id),lv=S.lp[id]||0,c=u.c*(lv+1);if(lv
 /* ---- rebirth ---- */
 function rebirthMerit(){const P=S.P;return Math.floor(combatClass()/8+P.rank*8+Object.keys(P.bosses).length*10+P.mlv+raceStage()*3)}
 function rebirth(){
-  const P=S.P,m=rebirthMerit();
-  S.merit+=m;
-  S.hall.unshift({name:P.name,life:S.lives,race:race().n,mag:magic().n,cc:combatClass(),rank:RANKS[P.rank].n,merit:m});
-  if(S.hall.length>25)S.hall.length=25;
+  const m=recordLife();
   S.P=null;C=null;newFate();save();
   toast(`Life ended. +${m} Merit carried forward.`);
 }
@@ -160,7 +161,7 @@ function rebirth(){
 /* ---- time ---- */
 function tick(dt){
   if(S.phase!=='play')return;
-  const P=S.P,sp=A().speed?5:1;
+  const P=S.P,sp=A().speed?5:1;if(P.dead)return;
   if(P.energy<maxEnergy()){P.ectr+=dt;const s=energySec();while(P.ectr>=s&&P.energy<maxEnergy()){P.ectr-=s;P.energy++}}else P.ectr=0;
   if(!C){P.hp=Math.min(maxHp(),P.hp+maxHp()*.002*dt*sp);P.mp=Math.min(maxMp(),P.mp+maxMp()*.004*dt*sp)}
   const t=TRAIN.find(x=>x.st===P.drill);
@@ -176,4 +177,9 @@ function offline(){
   return `Away ${Math.round(dt/60)} min: +${fmt(P.gold-g0)} gold, +${(P.raw[P.drill]-r0).toFixed(1)} ${STN[P.drill]}.`;
 }
 function save(){try{S.last=Date.now();localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.v===3){S=o;S.assist=S.assist||{};return true}}}catch(e){}return false}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.v===3){S=o;S.assist=S.assist||{};migrate();return true}}}catch(e){}return false}
+function migrate(){
+  if(S.fate&&!S.fate.gender)S.fate.gender='Male';
+  const P=S.P;if(!P)return;
+  if(P.age==null){P.age=ADULT;P.gender=P.gender||'Male';P.life=rollLife(P.race);P.gen=1;P.acts=4;P.dead=false;P.ev=null;makeFamily(P);P.people.forEach(p=>p.age+=ADULT)}
+}

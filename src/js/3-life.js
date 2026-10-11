@@ -1,0 +1,164 @@
+/* ===== LIFE SIM ===== */
+const AGE_TRAIN=3,AGE_FIGHT=6,AGE_WORK=10,AGE_TRIAL=12,ADULT=18;
+function rollLife(raceId){const r=byId(RACES,raceId);return Math.round(rnd(r.life[0],r.life[1]))}
+function nameFor(g){
+  const pool=g==='Female'?FNAMES:MNAMES,used=new Set();
+  if(S&&S.P){used.add(S.P.name);(S.P.people||[]).forEach(p=>used.add(p.name))}
+  if(S&&S.fate)used.add(S.fate.name);
+  let n=pick(pool);for(let i=0;i<15&&used.has(n);i++)n=pick(pool);return n;
+}
+function stage(P){P=P||S.P;if(P.age>=Math.max(50,P.life*.8))return 'Elder';return P.age<AGE_TRAIN?'Infant':P.age<13?'Child':P.age<ADULT?'Teen':'Adult'}
+
+/* ---- event helpers (used by EVENTS) ---- */
+function R(k,n){const v=n*(1+xb('learn')*.5);S.P.raw[k]+=v;return `+${v.toFixed(1)} ${STN[k]}`}
+function G(n){S.P.gold=Math.max(0,S.P.gold+Math.round(n*(n>0?goldMult():1)));return n>=0?`+${fmt(n*goldMult())} gold`:`-${fmt(-n)} gold`}
+function X(n){addRxp(n);return `+${Math.round(n*xpMult())} race XP`}
+function MX(n){addMxp(n);return `+${Math.round(n*xpMult())} magic XP`}
+function MER(n){S.merit+=n;return `+${n} Merit`}
+function bondAll(n){S.P.people.forEach(p=>{if(p.alive&&p.kind!=='rival')p.bond=Math.min(100,p.bond+n)})}
+
+/* ---- people ---- */
+function person(o){return Object.assign({id:Math.random().toString(36).slice(2,9),bond:Math.round(rnd(25,50)),alive:true},o)}
+function relName(p){
+  if(p.kind==='child')return p.gender==='Female'?'Daughter':'Son';
+  if(p.kind==='spouse')return p.gender==='Female'?'Wife':'Husband';
+  return p.rel||REL_KIND[p.kind];
+}
+function makeFamily(P){
+  const r=P.race,rl=byId(RACES,r).life,avg=(rl[0]+rl[1])/2,out=P.people=[];
+  ['Male','Female'].forEach(g=>out.push(person({kind:'family',rel:g==='Male'?'Father':'Mother',gender:g,name:nameFor(g),race:r,
+    age:Math.round(avg*rnd(.22,.4)),life:rollLife(r),bond:Math.round(rnd(55,85))})));
+  const sib=Math.floor(rnd(0,2.6));
+  for(let i=0;i<sib;i++){const g=pick(['Male','Female']);out.push(person({kind:'family',rel:g==='Male'?'Brother':'Sister',gender:g,name:nameFor(g),race:r,age:Math.round(rnd(1,8)),life:rollLife(r),bond:Math.round(rnd(40,70))}))}
+  return out;
+}
+function romanceGender(){const p=S.romance||'opposite';return p==='any'?pick(['Male','Female']):p==='opposite'?(S.P.gender==='Female'?'Male':'Female'):p}
+function meet(kind){
+  const P=S.P;
+  if(kind==='romance'&&P.age<14)kind='friend';
+  if(P.people.filter(p=>p.alive&&['friend','rival','mentor','romance'].includes(p.kind)).length>=10){
+    const i=P.people.findIndex(p=>p.alive&&['friend','rival','mentor','romance'].includes(p.kind)&&p.bond<30);
+    if(i>=0)P.people.splice(i,1);else return 'You hear about someone interesting, but your circle is already full.';
+  }
+  const g=kind==='romance'?romanceGender():pick(['Male','Female']);
+  const sameRace=Math.random()<.7,r=sameRace?P.race:rollFrom(RACES);
+  let age=Math.max(1,P.age+Math.round(rnd(-3,3)));
+  if(kind==='mentor')age=P.age+Math.round(rnd(15,40));
+  if(kind==='romance')age=Math.max(16,P.age+Math.round(rnd(-3,4)));
+  const p=person({kind,gender:g,name:nameFor(g),race:r,age,life:rollLife(r),bond:kind==='rival'?Math.round(rnd(5,20)):kind==='romance'?Math.round(rnd(20,40)):Math.round(rnd(25,45))});
+  if(kind==='mentor')p.st=pick(STK);
+  if(kind==='romance'){p.bl=rollFrom(BLOODS);p.mag=rollFrom(MAGICS)}
+  P.people.push(p);
+  const what={friend:'a new friend',rival:'a rival',mentor:`a mentor skilled in ${STN[p.st]||''}`,romance:'someone who catches your eye'}[kind];
+  return `You meet ${p.name}, ${what}.`;
+}
+function randomMeetKind(){const P=S.P;const r=Math.random();if(P.age>=16&&r<.25)return 'romance';if(r<.55)return 'friend';if(r<.75)return 'rival';return 'mentor'}
+function socialize(){const P=S.P;if(P.acts<=0||P.age<4)return;P.acts--;toast(meet(randomMeetKind()));}
+const giftCost=()=>Math.round(20+S.P.age*1.5);
+function canChild(){
+  const P=S.P,sp=P.people.find(p=>p.kind==='spouse'&&p.alive);
+  return sp&&P.age>=ADULT&&P.age<P.life*.6&&sp.age<sp.life*.6&&P.people.filter(p=>p.kind==='child').length<8?sp:null;
+}
+function interact(id,a){
+  const P=S.P,p=P.people.find(x=>x.id===id);if(!p||!p.alive)return;
+  if(a==='duel'){startFight('rival',id);return}
+  if(P.acts<=0){toast('No social actions left this year. Age up to refresh them.');return}
+  let msg='';
+  if(a==='time'){const b=Math.round(rnd(6,14));p.bond=Math.min(100,p.bond+b);msg=`You spend time with ${p.name}. Bond +${b}.`}
+  else if(a==='gift'){const c=giftCost();if(P.gold<c)return toast(`A good gift costs ${c} gold.`);P.gold-=c;p.bond=Math.min(100,p.bond+20);msg=`${p.name} loves your gift. Bond +20.`}
+  else if(a==='train'){const k=p.st||pick(STK),n=(p.kind==='mentor'?2.5:1)*learnMult()*(p.bond>=60?1.3:1);P.raw[k]+=n;p.bond=Math.min(100,p.bond+4);msg=`You train with ${p.name}. +${n.toFixed(1)} ${STN[k]}.`}
+  else if(a==='date'){if(p.bond<40)return toast(`${p.name} needs a bond of 40 first.`);p.kind='partner';p.bond=Math.min(100,p.bond+10);msg=`${p.name} agrees to be your partner!`;say(`Age ${P.age}. You begin courting ${p.name}.`)}
+  else if(a==='propose'){
+    if(P.age<ADULT||p.bond<70)return toast('You need to be an adult with a bond of 70 or more.');
+    if(Math.random()<p.bond/100+.1){p.kind='spouse';p.bond=Math.min(100,p.bond+15);msg=`${p.name} says yes! You are married.`;say(`Age ${P.age}. You marry ${p.name}.`)}
+    else{p.bond-=15;msg=`${p.name} isn't ready and turns you down. Bond -15.`}
+  }
+  else if(a==='child'){
+    const sp=canChild();if(!sp)return;
+    if(Math.random()<.55){const k=haveChild(sp);msg=`${k.name} is born! You have a ${k.gender==='Female'?'daughter':'son'}.`}
+    else msg='No child this time. Try again.';
+  }
+  else if(a==='leave'){
+    const was=relName(p);P.people.splice(P.people.indexOf(p),1);msg=p.kind==='spouse'?`You and ${p.name} divorce.`:`You part ways with ${p.name}.`;say(`Age ${P.age}. ${msg}`);
+    P.acts--;toast(msg);return;
+  }
+  P.acts--;toast(msg);
+}
+function haveChild(sp){
+  const P=S.P,g=pick(['Male','Female']),r=Math.random();
+  const k=person({kind:'child',gender:g,name:nameFor(g),age:0,bond:80,
+    race:Math.random()<.5?P.race:sp.race,
+    bl:Math.random()<.6?P.bl:(sp.bl||rollFrom(BLOODS)),
+    mag:r<.4?P.mag:r<.6&&sp.mag?sp.mag:rollFrom(MAGICS),
+    trait:rollFrom(TRAITS)});
+  k.life=rollLife(k.race);P.people.push(k);
+  say(`Age ${P.age}. ${k.name} is born to you and ${sp.name}: ${byId(RACES,k.race).n}, ${byId(MAGICS,k.mag).n} magic.`);
+  return k;
+}
+
+/* ---- aging ---- */
+function ageUp(n){
+  const P=S.P;if(!P||P.dead||P.ev!=null||C||MG)return;
+  for(let i=0;i<n;i++){
+    P.age++;P.acts=4;
+    if(P.age<=ADULT)STK.forEach(k=>P.raw[k]+=.8*(1+xb('learn')*.5));
+    else if(stage()==='Elder'){const d=.15/(P.life*.2);['str','spd','vit'].forEach(k=>P.raw[k]*=1-d)}
+    if(P.age===AGE_TRAIN)say(`Age ${P.age}. You are old enough to begin formal training.`);
+    if(P.age===AGE_FIGHT)say(`Age ${P.age}. You may now spar and explore the nearby wilds.`);
+    if(P.age===AGE_WORK)say(`Age ${P.age}. You are old enough to take on work.`);
+    if(P.age===AGE_TRIAL)say(`Age ${P.age}. The Vigil now accepts you for trials, and bosses take notice.`);
+    if(P.age===ADULT)say(`Age ${P.age}. You come of age.`);
+    for(const p of P.people){
+      if(!p.alive)continue;p.age++;
+      if(!['child','spouse','partner'].includes(p.kind))p.bond=Math.max(0,p.bond-2);
+      if(p.kind==='child'&&p.age===ADULT)say(`Age ${P.age}. Your ${relName(p).toLowerCase()} ${p.name} comes of age.`);
+      if(p.age>=p.life&&Math.random()<.35){
+        p.alive=false;say(`Age ${P.age}. Your ${relName(p).toLowerCase()} ${p.name} has died at ${p.age}.`);
+        if(p.rel==='Father'||p.rel==='Mother'){const g=Math.round(50+P.age*3);P.gold+=g;say(`You inherit ${g} gold.`)}
+      }
+    }
+    if(P.age>=5&&Math.random()<.15)say(`Age ${P.age}. ${meet(randomMeetKind())}`);
+    if(P.age>=P.life&&(Math.random()<.3||P.age>=P.life*1.1)){die();break}
+    if(n===1){
+      const pool=EVENTS.map((e,j)=>j).filter(j=>P.age>=EVENTS[j].a[0]&&P.age<=EVENTS[j].a[1]);
+      if(pool.length&&Math.random()<(P.age<=8?.75:.5))P.ev=pick(pool);
+      else if(Math.random()<.4)say(`Age ${P.age}. ${pick(FLAVOUR)}`);
+    }
+  }
+  save();
+}
+function resolveEvent(ci){
+  const P=S.P,e=EVENTS[P.ev];if(!e)return;
+  const c=e.c[ci];P.ev=null;
+  say(`Age ${P.age}. ${c[0]}: ${c[1]()}`);save();
+}
+function die(){const P=S.P;P.dead=true;say(`${P.name} dies at the age of ${P.age}.`);save()}
+function heirs(){return S.P.people.filter(p=>p.kind==='child'&&p.alive)}
+function recordLife(){
+  const P=S.P,m=rebirthMerit();S.merit+=m;
+  S.hall.unshift({name:P.name,life:S.lives,gen:P.gen||1,age:P.age,race:race().n,mag:magic().n,cc:combatClass(),rank:RANKS[P.rank].n,merit:m});
+  if(S.hall.length>25)S.hall.length=25;
+  return m;
+}
+function continueAs(cid){
+  const old=S.P,kid=old.people.find(p=>p.id===cid);if(!kid)return;
+  const m=recordLife(),head=(S.lp.head||0)*4,raw={};
+  STK.forEach(k=>raw[k]=10+head+old.raw[k]*.15+.8*Math.min(kid.age,ADULT));
+  [['race',kid.race],['bl',kid.bl],['mag',kid.mag],['trait',kid.trait]].forEach(([k,id])=>discover(k,id));
+  const ppl=[];
+  old.people.forEach(p=>{
+    if(p.id===cid)return;
+    if(p.kind==='spouse'||p.kind==='partner')ppl.push(Object.assign({},p,{kind:'family',rel:p.gender==='Female'?'Mother':'Father',bond:Math.max(50,p.bond)}));
+    else if(p.kind==='child')ppl.push(Object.assign({},p,{kind:'family',rel:p.gender==='Female'?'Sister':'Brother'}));
+  });
+  ppl.unshift(person({kind:'family',rel:old.gender==='Female'?'Mother':'Father',gender:old.gender,name:old.name,race:old.race,age:old.age,life:old.life,bond:kid.bond,alive:false}));
+  S.P={name:kid.name,gender:kid.gender,race:kid.race,bl:kid.bl,mag:kid.mag,trait:kid.trait,back:'heir',backN:`Heir of ${old.name}`,raw,
+    mast:{},tier:Object.assign({},old.tier),mxp:0,mlv:1,rxp:0,rank:0,gold:Math.round(old.gold*.5),energy:maxEnergyFor(),ectr:0,drill:old.drill,
+    wpn:old.wpn,foc:old.foc,owned:old.owned.slice(),pot:Object.assign({},old.pot),jobs:{},bosses:{},titles:[],streak:{},wins:0,log:[],hp:-1,mp:-1,
+    age:kid.age,life:kid.life||rollLife(kid.race),gen:(old.gen||1)+1,people:ppl,acts:4,dead:false,ev:null};
+  S.lives++;C=null;
+  const P=S.P;P.hp=maxHp();P.mp=maxMp();
+  say(`Generation ${P.gen}. ${P.name} carries on the legacy of ${old.name} at age ${P.age}, inheriting ${fmt(P.gold)} gold, the family gear and training grounds.`);
+  toast(`+${m} Merit. ${P.name} continues your line.`);save();
+}
+function maxEnergyFor(){return 10+(S.lp.reserve||0)*2}

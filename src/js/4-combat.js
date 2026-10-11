@@ -14,7 +14,10 @@ function canFight(){
 }
 function startFight(kind,ref){
   const P=S.P;let foe,cost=1;
-  if(kind!=='spar'&&!canFight())return;
+  if(P.age<AGE_FIGHT){toast(`Fighting begins at age ${AGE_FIGHT}.`);return}
+  if((kind==='boss'||kind==='trial')&&P.age<AGE_TRIAL){toast(`Bosses and trials open at age ${AGE_TRIAL}.`);return}
+  const safe=kind==='spar'||kind==='rival';
+  if(!safe&&!canFight())return;
   if(kind==='region'){
     const r=byId(REGIONS,ref),sk=P.streak[r.id]||0,f=pick(r.f);
     foe=makeFoe(f[0],f[1],r.cc*(1+.06*sk),.5,.85);
@@ -24,13 +27,16 @@ function startFight(kind,ref){
   }else if(kind==='trial'){
     const nx=RANKS[P.rank+1];cost=2;
     foe=makeFoe('Vigil Examiner','duel',nx.cc,1.1,.95);foe.boss=true;
+  }else if(kind==='rival'){
+    const rv=P.people.find(x=>x.id===ref);if(!rv)return;
+    foe=makeFoe(rv.name,pick(['duel','brute','swift','caster']),combatClass()*rnd(.9,1.12),.7,.9);
   }else{
     foe=makeFoe('Sparring Trainer','duel',combatClass()*.85,.6,.8);
   }
   if(!useEnergy(cost))return;
   const e=effAll();
   C={kind,ref,foe,e,log:[],over:null,turn:1,snap:{hp:P.hp,mp:P.mp},
-     p:{hp:kind==='spar'?maxHp():P.hp,max:maxHp(),mp:kind==='spar'?maxMp():P.mp,mmax:maxMp(),st:maxSt(),smax:maxSt(),s:{}}};
+     p:{hp:safe?maxHp():P.hp,max:maxHp(),mp:safe?maxMp():P.mp,mmax:maxMp(),st:maxSt(),smax:maxSt(),s:{}}};
   foe.intent=nextIntent();
   clog(`${foe.n} (CC ${foe.cc}) stands before you.`);
 }
@@ -129,7 +135,7 @@ function foeTurn(){
 function endFight(res){
   const P=S.P,f=C.foe,p=C.p;let rew=[];
   C.over=res;
-  if(C.kind==='spar'){P.hp=C.snap.hp;P.mp=C.snap.mp}else{P.hp=Math.max(0,p.hp);P.mp=p.mp}
+  if(C.kind==='spar'||C.kind==='rival'){P.hp=C.snap.hp;P.mp=C.snap.mp}else{P.hp=Math.max(0,p.hp);P.mp=p.mp}
   if(res==='win'){
     P.wins++;const cc=f.cc;
     if(C.kind==='region'){
@@ -148,6 +154,10 @@ function endFight(res){
     }else if(C.kind==='trial'){
       P.rank++;const g=Math.round(RANKS[P.rank].cc*5*goldMult());P.gold+=g;
       rew.push(`Promoted to ${RANKS[P.rank].n}`,`+${fmt(g)} gold`,'+5% to every stat');say(`You pass the trial and are named ${RANKS[P.rank].n}.`);
+    }else if(C.kind==='rival'){
+      const rv=P.people.find(x=>x.id===C.ref),c=1.6*learnMult();['str','spd','dur'].forEach(k=>P.raw[k]+=c);
+      if(rv){rv.bond=Math.min(100,rv.bond+12);rv.wins=(rv.wins||0)+1;if(rv.bond>=60&&rv.kind==='rival'){rv.kind='friend';rew.push(`${rv.name} now respects you as a friend`)}}
+      rew.push(`+${c.toFixed(1)} Strength, Speed, Durability`,'Rival bond +12');say(`Age ${P.age}. You defeat your rival ${f.n} in a duel.`);
     }else{
       const c=2.5*1.2*learnMult();['str','spd','dur','int'].forEach(k=>P.raw[k]+=c);
       rew.push(`+${c.toFixed(1)} Strength, Speed, Durability, Intelligence`);
@@ -156,7 +166,8 @@ function endFight(res){
   }else if(res==='lose'){
     clog(`You were defeated by ${f.n}.`);
     if(C.kind==='region'){P.streak[C.ref]=0;const l=Math.floor(P.gold*.1);P.gold-=l;rew.push(`Lost ${fmt(l)} gold`,'Streak reset')}
-    if(C.kind!=='spar'){P.hp=Math.max(1,Math.round(maxHp()*.05));rew.push('Badly wounded. Recover before your next fight.')}
+    if(C.kind==='rival'){const rv=P.people.find(x=>x.id===C.ref);if(rv)rv.bond=Math.max(0,rv.bond-5);rew.push('Your rival gloats')}
+    if(C.kind!=='spar'&&C.kind!=='rival'){P.hp=Math.max(1,Math.round(maxHp()*.05));rew.push('Badly wounded. Recover before your next fight.')}
   }
   C.rew=rew;save();
 }

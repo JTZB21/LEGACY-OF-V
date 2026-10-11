@@ -11,7 +11,7 @@ const renderMG=()=>renderOv();
 function renderOv(){
   const o=$('ov');
   let h='';
-  if(C)h=vCombat();else if(MG)h=vMG();else if(modal)h=vModal();
+  if(C)h=vCombat();else if(MG)h=vMG();else if(S.phase==='play'&&S.P&&S.P.dead)h=vDeath();else if(S.phase==='play'&&S.P&&S.P.ev!=null)h=vEvent();else if(modal)h=vModal();
   if(!h){o.hidden=true;o.innerHTML='';return}
   o.hidden=false;o.innerHTML=`<div class="box" ${C?'style="max-width:620px"':''}>${h}</div>`;
   if(MG)mgUpdate();
@@ -90,6 +90,15 @@ function mgUpdate(){
     $('mgBig').textContent=m.showing?(m.shown>=0?m.seq[m.shown]:'Watch...'):`${'●'.repeat(m.k)}${'○'.repeat(m.seq.length-m.k)}`;
   }
 }
+/* ---- life events ---- */
+function vEvent(){const P=S.P,e=EVENTS[P.ev];
+  return `<div class="sm dim" style="text-align:center">AGE ${P.age} · ${stage().toUpperCase()}</div><div style="font-size:1.05rem;text-align:center;font-weight:600">${e.t}</div>
+  ${e.c.map((c,i)=>`<button data-a="evc" data-v="${i}">${c[0]}</button>`).join('')}`}
+function vDeath(){const P=S.P,h=heirs(),m=rebirthMerit();
+  return `<h2>${P.name} has died</h2><div class="d">Died at age ${P.age} as ${RANKS[P.rank].n}, Combat Class ${combatClass()}. This life earns <b style="color:var(--fg)">${m} Merit</b>.</div>
+  ${h.length?`<div class="sm" style="text-align:center;color:var(--gold2)">Continue the bloodline as an heir. They inherit half your gold, your gear and your training grounds.</div>
+  ${h.map(k=>`<button data-a="heir" data-v="${k.id}">${k.name}, age ${k.age} · ${byId(RACES,k.race).n} · <span style="color:${rc(byId(MAGICS,k.mag).r)}">${byId(MAGICS,k.mag).n}</span></button>`).join('')}`:'<div class="d">You leave no heirs.</div>'}
+  <button class="alt" data-a="newlife">Begin a new life (roll fate)</button>`}
 /* ---- modals ---- */
 function vModal(){
   if(modal==='odds')return `<h2>Fate odds</h2><div class="d">Each category gets ${freeSpins()} free spins per life. After that a spin costs 25 Merit. Secret results can only be rolled, never chosen.</div>
@@ -121,7 +130,7 @@ document.addEventListener('pointerdown',e=>{
   e.preventDefault();mgTap(b.dataset.v);
 });
 document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate)S.fate.name=e.target.value.trim().slice(0,18)});
-document.addEventListener('change',e=>{if(e.target.id==='drill'){S.P.drill=e.target.value;save();render()}});
+document.addEventListener('change',e=>{if(e.target.id==='drill'){S.P.drill=e.target.value;save();render()}if(e.target.id==='romp'){S.romance=e.target.value;save()}});
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
   const a=b.dataset.a,v=b.dataset.v;
@@ -130,7 +139,15 @@ document.addEventListener('click',e=>{
     case 'tab':tab=v;$('view').scrollTop=0;break;
     case 'ctab':ctab=v;break;
     case 'spin':if(spin(v))flashCat=v;break;
-    case 'rname':S.fate.name=pick(FIRST);break;
+    case 'rname':S.fate.name=nameFor(S.fate.gender);break;
+    case 'gender':S.fate.gender=v;break;
+    case 'age':ageUp(S.ageX||1);break;
+    case 'agex':S.ageX={1:5,5:10,10:1}[S.ageX||1];toast(`+ Age now advances ${S.ageX} year${S.ageX>1?'s':''}. Multi-year skips grow your stats but skip yearly events.`);break;
+    case 'evc':resolveEvent(+v);break;
+    case 'heir':continueAs(v);tab='you';break;
+    case 'newlife':rebirth();ctab='race';break;
+    case 'social':socialize();break;
+    case 'ppl':{const [id,k]=v.split(':');interact(id,k);break}
     case 'modal':modal=v;break;
     case 'close':modal=null;break;
     case 'exact':chooseExact(ctab,v);modal=null;flashCat=ctab;break;

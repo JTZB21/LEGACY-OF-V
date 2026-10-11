@@ -4,6 +4,7 @@ const MOVES=['Dodge','Jump','Slide','Dash'];
 const SYMS=['◆','▲','●','■','★','✚'];
 function startTrain(id){
   const isRite=id==='rite',t=isRite?{id:'rite',n:'Heritage Rite',g:'timing'}:byId(TRAIN,id);
+  if(S.P.age<AGE_TRAIN){toast(`Training begins at age ${AGE_TRAIN}.`);return}
   if(!useEnergy(1))return;
   MG={t,type:t.g,phase:'play',t0:performance.now(),sc:[],i:0};
   if(A().auto){mgFinish(.85);return}

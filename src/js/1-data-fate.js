@@ -8,16 +8,16 @@ const STN={str:'Strength',spd:'Speed',dur:'Durability',vit:'Health',mag:'Magic',
 const XN={learn:'training gains',gold:'gold earned',crit:'critical chance',all:'all stats'};
 
 const RACES=[
- {id:'human',n:'Human',r:0,d:'Adaptable and driven. Learns faster than anyone.',m:{learn:.15,gold:.1},st:'Grit|Quick Study|Battle Sense|Iron Will|Awakened Potential|Hero\'s Resolve|Paragon of Man'},
- {id:'stonebred',n:'Stonebred',r:1,d:'Towering mountain clans built like cliffs.',m:{str:.35,vit:.35,dur:.3,spd:-.15},st:'Enhanced Strength|Stone Skin|Earth Shaping|War Chant|Mountain Heart|Titan Mastery|Mountain King Candidate'},
- {id:'tidefolk',n:'Tidefolk',r:1,d:'Sea-born folk with calm, deep minds.',m:{vit:.2,ctl:.25,spr:.15},st:'Gill Breath|Current Sense|Tide Calling|Deep Pressure|Pearl Heart|Maelstrom|Tide Sovereign'},
- {id:'skyborn',n:'Skyborn',r:2,d:'Cloud-city people, light and swift.',m:{spd:.4,int:.2,dur:-.1},st:'Feather Step|Wind Reading|Glide|Updraft|Storm Eyes|Sky Dancer|Herald of the Winds'},
- {id:'sylvan',n:'Sylvan',r:2,d:'Forest-born fae steeped in old magic.',m:{mag:.35,spd:.2,spr:.15,str:-.2},st:'Leafsong|Bloom|Grove Bond|Wild Growth|Ancient Bark|Heartwood|Sylvan Monarch'},
- {id:'ashborn',n:'Ashborn',r:3,d:'Born of ember and shadow. Hungry for battle.',m:{str:.3,mag:.3,vit:.15,spr:-.1},st:'Ember Blood|Dark Flame|Hellish Regrowth|Crimson Horns|Twin Hearts|Inferno Core|Ash Lord'},
- {id:'lumen',n:'Lumen',r:4,d:'Radiant beings descended from the high heavens.',m:{mag:.35,spr:.4,ctl:.2},st:'Halo|Radiant Wings|Purifying Light|Sanctuary|Celestial Song|Seraph Form|Archon'},
- {id:'dragonkin',n:'Dragonkin',r:5,d:'Scaled descendants of the old wyrms.',m:{str:.4,dur:.4,vit:.3,mag:.25},st:'Scales|Fire Lungs|Wyrm Eyes|Wings|Dragon Heart|Ancient Roar|Elder Wyrm'},
- {id:'starforged',n:'Starforged',r:6,d:'Shaped from fallen starlight.',m:{all:.45},st:'Spark|Constellation|Nova Pulse|Gravity Core|Supernova|Celestial Body|Living Star'},
- {id:'voidtouched',n:'Voidtouched',r:7,d:'Something from beyond answered when you were born.',m:{all:.7,learn:.2},st:'Hollow|Unseen|Void Step|Unmaking|Null Heart|Reality Tear|Beyond'}
+ {id:'human',life:[70,90],n:'Human',r:0,d:'Adaptable and driven. Learns faster than anyone.',m:{learn:.15,gold:.1},st:'Grit|Quick Study|Battle Sense|Iron Will|Awakened Potential|Hero\'s Resolve|Paragon of Man'},
+ {id:'stonebred',life:[400,700],n:'Stonebred',r:1,d:'Towering mountain clans built like cliffs.',m:{str:.35,vit:.35,dur:.3,spd:-.15},st:'Enhanced Strength|Stone Skin|Earth Shaping|War Chant|Mountain Heart|Titan Mastery|Mountain King Candidate'},
+ {id:'tidefolk',life:[140,200],n:'Tidefolk',r:1,d:'Sea-born folk with calm, deep minds.',m:{vit:.2,ctl:.25,spr:.15},st:'Gill Breath|Current Sense|Tide Calling|Deep Pressure|Pearl Heart|Maelstrom|Tide Sovereign'},
+ {id:'skyborn',life:[110,150],n:'Skyborn',r:2,d:'Cloud-city people, light and swift.',m:{spd:.4,int:.2,dur:-.1},st:'Feather Step|Wind Reading|Glide|Updraft|Storm Eyes|Sky Dancer|Herald of the Winds'},
+ {id:'sylvan',life:[500,800],n:'Sylvan',r:2,d:'Forest-born fae steeped in old magic.',m:{mag:.35,spd:.2,spr:.15,str:-.2},st:'Leafsong|Bloom|Grove Bond|Wild Growth|Ancient Bark|Heartwood|Sylvan Monarch'},
+ {id:'ashborn',life:[300,500],n:'Ashborn',r:3,d:'Born of ember and shadow. Hungry for battle.',m:{str:.3,mag:.3,vit:.15,spr:-.1},st:'Ember Blood|Dark Flame|Hellish Regrowth|Crimson Horns|Twin Hearts|Inferno Core|Ash Lord'},
+ {id:'lumen',life:[900,1200],n:'Lumen',r:4,d:'Radiant beings descended from the high heavens.',m:{mag:.35,spr:.4,ctl:.2},st:'Halo|Radiant Wings|Purifying Light|Sanctuary|Celestial Song|Seraph Form|Archon'},
+ {id:'dragonkin',life:[700,1000],n:'Dragonkin',r:5,d:'Scaled descendants of the old wyrms.',m:{str:.4,dur:.4,vit:.3,mag:.25},st:'Scales|Fire Lungs|Wyrm Eyes|Wings|Dragon Heart|Ancient Roar|Elder Wyrm'},
+ {id:'starforged',life:[1200,1800],n:'Starforged',r:6,d:'Shaped from fallen starlight.',m:{all:.45},st:'Spark|Constellation|Nova Pulse|Gravity Core|Supernova|Celestial Body|Living Star'},
+ {id:'voidtouched',life:[1500,2500],n:'Voidtouched',r:7,d:'Something from beyond answered when you were born.',m:{all:.7,learn:.2},st:'Hollow|Unseen|Void Step|Unmaking|Null Heart|Reality Tear|Beyond'}
 ];
 const BLOODS=[
  {id:'common',n:'Common Line',r:0,d:'An ordinary family with nothing to live up to.',m:{learn:.05}},
@@ -91,4 +91,6 @@ const BACKS=[
  {id:'scholar',n:'Wandering Scholar',d:'Travel, books and observation sharpened magic, spirit and intelligence.',raw:{mag:6,spr:7,int:8},gold:120}
 ];
 const CATS=[['race','Race',RACES],['bl','Bloodline',BLOODS],['mag','Magic',MAGICS],['trait','Trait',TRAITS]];
+const MNAMES=['Aldric','Cael','Eamon','Gareth','Halric','Joren','Nolan','Orin','Perrin','Soren','Ulric','Zeph','Torin','Bram','Miles','Kael','Dorian','Fenric','Lucan','Rowan','Tavin','Corvin','Edric','Varek'];
+const FNAMES=['Brenna','Dara','Fenna','Isolde','Kestra','Lysa','Maren','Rhea','Talia','Vessa','Wren','Yara','Mira','Elka','Ione','Sable','Aveline','Celia','Liora','Nessa','Seren','Thalia','Elowen','Ysolde'];
 const FIRST=['Aldric','Brenna','Cael','Dara','Eamon','Fenna','Gareth','Halric','Isolde','Joren','Kestra','Lysa','Maren','Nolan','Orin','Perrin','Rhea','Soren','Talia','Ulric','Vessa','Wren','Yara','Zeph','Mira','Torin','Elka','Bram','Ione','Miles','Kael','Sable'];
