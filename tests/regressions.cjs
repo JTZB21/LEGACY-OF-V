@@ -243,3 +243,17 @@ test('balanced routine raises the lowest stats and spends every point',()=>{
   assert.equal(after.str,before.str);
   assert.equal(g.run('S.P.energy'),0);
 });
+
+test('combat class keeps balanced builds at 2x their stat and rewards real fighting strength',()=>{
+  const g=game();
+  g.run("S.P.wpn=null;S.P.foc=null;S.P.mlv=1;STK.forEach(k=>S.P.raw[k]=100);");
+  const e=g.run("eff('str')"),bal=g.run('combatClass()');
+  assert.ok(Math.abs(bal-2*g.run("physA()-5"))<=2,'balanced CC should equal 2x attack-equivalent stat');
+  // same total raw stats, poured into Strength and Health only: fights far better, so CC must be higher
+  g.run("STK.forEach(k=>S.P.raw[k]=25);S.P.raw.str=325;S.P.raw.vit=325;");
+  assert.ok(g.run('combatClass()')>bal*1.4);
+  // a pure tank with almost no attack must not look stronger than the balanced build
+  g.run("STK.forEach(k=>S.P.raw[k]=25);S.P.raw.vit=325;S.P.raw.dur=325;");
+  assert.ok(g.run('combatClass()')<bal);
+  assert.ok(Number.isFinite(e));
+});

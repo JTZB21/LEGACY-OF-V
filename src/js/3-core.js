@@ -96,10 +96,15 @@ function maxSt(e){e=e||effAll();return Math.round(60+e.spd*.5+e.vit*.5)}
 function physA(e){e=e||effAll();return (5+e.str)*(1+gearB('w'))}
 function magA(e){e=e||effAll();return (5+e.mag*.9+e.ctl*.4)*(1+gearB('f'))*awaken()}
 function critC(){return .05+xb('crit')+.15*eff('int')/(eff('int')+30)}
-function combatClass(){
-  const e=effAll(),base=STK.reduce((a,k)=>a+e[k],0)/4;
-  return Math.round(base*(1+gearB('w')*.25+gearB('f')*.25)+S.P.mlv*1.5);
-}
+/* Combat Class = how strong you actually fight. Offense is your better attack (weapon or spells, with
+   magic awakenings counted extra); defense is your health pool. Weighted 55/45 because a simulation of
+   many builds showed offense matters slightly more. A balanced build without gear scores 2x its average stat,
+   which is how enemies are built, so CC X still means an even fight against an enemy of CC X. */
+function ccParts(e){e=e||effAll();
+  /* magA already includes awakenings; unlocked spell power is left out because mana limits big spells */
+  const phys=physA(e)-5,mag=(magA(e)-5)/1.3;
+  return {off:Math.max(1,phys,mag),def:Math.max(1,(maxHp(e)-80)/8),magic:mag>phys}}
+function combatClass(){const c=ccParts();return Math.round(2*Math.pow(c.off,.55)*Math.pow(c.def,.45))}
 function maxEnergy(){return AP_BASE+Math.min(3,S.lp.reserve||0)+(A().speed?6:0)}
 function useEnergy(n){if(S.P.energy<n){toast(n>S.P.energy&&S.P.energy===0?'No activity points left this year. Press + Age to start a new year.':`Not enough activity points. ${n} needed.`);return false}S.P.energy-=n;return true}
 function mxpNeed(){return Math.round(15*Math.pow(S.P.mlv,1.6))}

@@ -98,6 +98,7 @@ function vYou(){
     <div class="kv"><span>Titles</span><b>${P.titles.length?P.titles.join(', '):'None yet'}</b></div>
   </div>
   <div class="card"><h2 style="color:var(--hp)">Combat Class ${combatClass()}</h2>
+    ${(()=>{const c=ccParts(e);return `<div class="d">Offense ${fmt(c.off*2)} (${c.magic?'spells':'weapon'}) · Defense ${fmt(c.def*2)}. Raising your weaker side raises CC most.</div>`})()}
     ${STK.map(k=>`<div class="kv"><span>${STN[k]}</span><b class="num">${fmt(e[k])} <span class="dim sm">×${mult(k).toFixed(2)}</span></b></div>`).join('')}
     <div class="kv"><span>Max HP / Mana / Stamina</span><b class="num">${fmt(maxHp(e))} / ${fmt(maxMp(e))} / ${fmt(maxSt(e))}</b></div>
     <div class="kv"><span>Attack / Magic power</span><b class="num">${fmt(physA(e))} / ${fmt(magA(e))}</b></div>

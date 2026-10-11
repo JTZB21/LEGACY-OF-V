@@ -364,15 +364,15 @@ const BOSSES=[
  {id:'golemking',n:'Cinder Golem King',cc:100,hp:1.8,a:'tank',i:{heavy:3,charge:2,guard:2,strike:2},d:'A furnace given a crown.',title:'Kingsmelter'},
  {id:'slagboundassayer',n:'The Slagbound Assayer',cc:140,hp:1.9,a:'brute',i:{heavy:3,guard:2,charge:2,strike:2},d:'An abandoned ore inspector seals living miners inside metal shells in the Ashen Mines.',title:'Slagbreaker'},
  {id:'captain',n:'The Drowned Captain',cc:180,hp:1.8,a:'duel',i:{strike:3,heavy:2,drain:2,guard:1},d:'He still commands a crew of corpses.',title:'Tidebreaker'},
- {id:'siltlungcantor',n:'The Siltlung Cantor',cc:240,hp:1.6,a:'caster',i:{spell:3,drain:2,heal:1,guard:1},d:'A buried singer draws breath from intruders to finish a hymn beneath the Drowned Crypt.',title:'Hymnender'},
+ {id:'siltlungcantor',n:'The Siltlung Cantor',cc:240,hp:1.45,a:'caster',i:{spell:3,drain:2,heal:1,guard:1},d:'A buried singer draws breath from intruders to finish a hymn beneath the Drowned Crypt.',title:'Hymnender'},
  {id:'roc',n:'Storm Roc Empress',cc:300,hp:2.8,a:'swift',i:{flurry:3,spell:2,charge:1,strike:2},d:'Her wings carry the thunder.',title:'Skyfeller'},
  {id:'vasktheunroped',n:'Vask the Unroped',cc:390,hp:3.1,a:'duel',i:{strike:3,flurry:2,guard:2,heavy:1},d:'A disgraced bridge keeper cuts every safety rope before challenging climbers in the Skyward Spires.',title:'Spanclaimer'},
- {id:'regent',n:'The Pale Regent',cc:480,hp:2.7,a:'caster',i:{spell:3,drain:2,guard:1,charge:1},d:'Ruler of the Voidmarch\'s silent court.',title:'Regicide'},
+ {id:'regent',n:'The Pale Regent',cc:480,hp:2.25,a:'caster',i:{spell:3,drain:2,guard:1,charge:1},d:'Ruler of the Voidmarch\'s silent court.',title:'Regicide'},
  {id:'theburdenherd',n:'The Burden Herd',cc:620,hp:2.3,a:'brute',i:{charge:3,heavy:3,strike:2,heal:1},d:'Discarded pack beasts share one vast body that still follows a vanished supply road through the Voidmarch.',title:'Burdenender'},
- {id:'stareater',n:'Star-eater',cc:780,hp:3,a:'brute',i:{heavy:3,charge:2,strike:2,heal:1},d:'It swallowed three constellations.',title:'Starsaver'},
- {id:'paragon',n:'The Fallen Paragon',cc:1250,hp:3.3,a:'duel',i:{strike:3,heavy:2,spell:2,charge:1,heal:1},d:'Once the greatest of the Vigil.',title:'Oathkeeper'},
- {id:'herald',n:'Herald of Oblivion',cc:2000,hp:3.8,a:'caster',i:{spell:3,drain:2,charge:2,heavy:1},d:'The end of all things, wearing a mask.',title:'Last Light'},
- {id:'thelastinhabitant',n:'The Last Inhabitant',cc:3000,hp:3.1,a:'caster',i:{spell:3,heavy:2,drain:3,guard:2,heal:1},d:'Deep in the Last Abyss, a lone figure feeds an empty city with the years stolen from its visitors.',title:'Yearreclaimer'}
+ {id:'stareater',n:'Star-eater',cc:780,hp:2.4,a:'brute',i:{heavy:3,charge:2,strike:2,heal:1},d:'It swallowed three constellations.',title:'Starsaver'},
+ {id:'paragon',n:'The Fallen Paragon',cc:1250,hp:2.3,a:'duel',i:{strike:3,heavy:2,spell:2,charge:1,heal:1},d:'Once the greatest of the Vigil.',title:'Oathkeeper'},
+ {id:'herald',n:'Herald of Oblivion',cc:2000,hp:2.15,a:'caster',i:{spell:3,drain:2,charge:2,heavy:1},d:'The end of all things, wearing a mask.',title:'Last Light'},
+ {id:'thelastinhabitant',n:'The Last Inhabitant',cc:3000,hp:1.8,a:'caster',i:{spell:3,heavy:2,drain:3,guard:2,heal:1},d:'Deep in the Last Abyss, a lone figure feeds an empty city with the years stolen from its visitors.',title:'Yearreclaimer'}
 ];
 /* rank needed to challenge a boss, from its CC */
 const bossRank=b=>b.cc<60?0:b.cc<120?1:b.cc<220?2:b.cc<400?3:b.cc<700?4:b.cc<1500?5:6;
@@ -528,10 +528,15 @@ function maxSt(e){e=e||effAll();return Math.round(60+e.spd*.5+e.vit*.5)}
 function physA(e){e=e||effAll();return (5+e.str)*(1+gearB('w'))}
 function magA(e){e=e||effAll();return (5+e.mag*.9+e.ctl*.4)*(1+gearB('f'))*awaken()}
 function critC(){return .05+xb('crit')+.15*eff('int')/(eff('int')+30)}
-function combatClass(){
-  const e=effAll(),base=STK.reduce((a,k)=>a+e[k],0)/4;
-  return Math.round(base*(1+gearB('w')*.25+gearB('f')*.25)+S.P.mlv*1.5);
-}
+/* Combat Class = how strong you actually fight. Offense is your better attack (weapon or spells, with
+   magic awakenings counted extra); defense is your health pool. Weighted 55/45 because a simulation of
+   many builds showed offense matters slightly more. A balanced build without gear scores 2x its average stat,
+   which is how enemies are built, so CC X still means an even fight against an enemy of CC X. */
+function ccParts(e){e=e||effAll();
+  /* magA already includes awakenings; unlocked spell power is left out because mana limits big spells */
+  const phys=physA(e)-5,mag=(magA(e)-5)/1.3;
+  return {off:Math.max(1,phys,mag),def:Math.max(1,(maxHp(e)-80)/8),magic:mag>phys}}
+function combatClass(){const c=ccParts();return Math.round(2*Math.pow(c.off,.55)*Math.pow(c.def,.45))}
 function maxEnergy(){return AP_BASE+Math.min(3,S.lp.reserve||0)+(A().speed?6:0)}
 function useEnergy(n){if(S.P.energy<n){toast(n>S.P.energy&&S.P.energy===0?'No activity points left this year. Press + Age to start a new year.':`Not enough activity points. ${n} needed.`);return false}S.P.energy-=n;return true}
 function mxpNeed(){return Math.round(15*Math.pow(S.P.mlv,1.6))}
@@ -1200,6 +1205,7 @@ function vYou(){
     <div class="kv"><span>Titles</span><b>${P.titles.length?P.titles.join(', '):'None yet'}</b></div>
   </div>
   <div class="card"><h2 style="color:var(--hp)">Combat Class ${combatClass()}</h2>
+    ${(()=>{const c=ccParts(e);return `<div class="d">Offense ${fmt(c.off*2)} (${c.magic?'spells':'weapon'}) · Defense ${fmt(c.def*2)}. Raising your weaker side raises CC most.</div>`})()}
     ${STK.map(k=>`<div class="kv"><span>${STN[k]}</span><b class="num">${fmt(e[k])} <span class="dim sm">×${mult(k).toFixed(2)}</span></b></div>`).join('')}
     <div class="kv"><span>Max HP / Mana / Stamina</span><b class="num">${fmt(maxHp(e))} / ${fmt(maxMp(e))} / ${fmt(maxSt(e))}</b></div>
     <div class="kv"><span>Attack / Magic power</span><b class="num">${fmt(physA(e))} / ${fmt(magA(e))}</b></div>
