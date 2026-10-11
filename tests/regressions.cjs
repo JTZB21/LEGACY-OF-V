@@ -35,7 +35,7 @@ test('imports migrate pre-activity saves before rendering Training',()=>{
   g.run("tab='train';delete S.P.rt;delete S.rtMode;S.P.ectr=7;S.P.drill='str';modal='settings';");
   g.node('sv').value=g.run('btoa(unescape(encodeURIComponent(JSON.stringify(S))))');
   g.click('imp');
-  assert.equal(g.run('S.P.rt.train'),'boulder');
+  assert.equal(g.run('S.P.rt.train'),'balanced');
   assert.equal(g.run('S.rtMode'),'ask');
   assert.equal(g.run('S.P.energy'),12);
   assert.equal(g.run("'ectr' in S.P"),false);
@@ -222,4 +222,24 @@ test('an unreadable stored save is backed up before starting fresh',()=>{
   const backups=[...g.storage.keys()].filter(k=>k.startsWith('vigil_save_v3_backup_'));
   assert.equal(backups.length,1);
   assert.equal(g.storage.get(backups[0]),'{"v":3,"phase":"play","P":{"broken":true}}');
+});
+
+test('switching gender renames an auto-generated name but keeps a typed one',()=>{
+  const g=game();
+  g.run("S.phase='create';newFate();S.fate.gender='Male';S.fate.name=MNAMES[0];S.fate.custom=false;");
+  g.click('gender','Female',false);
+  assert.equal(g.run('FNAMES.includes(S.fate.name)'),true);
+  g.run("S.fate.name='Ops';S.fate.custom=true;");
+  g.click('gender','Male',false);
+  assert.equal(g.run('S.fate.name'),'Ops');
+});
+test('balanced routine raises the lowest stats and spends every point',()=>{
+  const g=game();
+  g.run("S.P.rt={train:'balanced',tN:12,wN:0,rN:0,social:false};STK.forEach(k=>S.P.raw[k]=50);S.P.raw.vit=10;S.P.raw.spr=12;S.P.energy=12;");
+  const before=JSON.parse(g.run('JSON.stringify(S.P.raw)'));
+  g.run('runRoutine(12)');
+  const after=JSON.parse(g.run('JSON.stringify(S.P.raw)'));
+  assert.ok(after.vit>before.vit&&after.spr>before.spr);
+  assert.equal(after.str,before.str);
+  assert.equal(g.run('S.P.energy'),0);
 });

@@ -745,7 +745,7 @@ function haveChild(sp){
 }
 
 /* ---- yearly routine ---- */
-function defaultRoutine(){return {train:'boulder',tN:6,job:'best',wN:4,rN:2,social:true}}
+function defaultRoutine(){return {train:'balanced',tN:6,job:'best',wN:4,rN:2,social:true}}
 function bestJob(){let b=null;JOBS.forEach(j=>{if(jobOpen(j)&&(!b||jobPay(j)>jobPay(b)))b=j});return b}
 function routineJob(){const P=S.P,rt=P.rt;if(rt.job!=='best'){const j=byId(JOBS,rt.job);if(j&&jobOpen(j))return j}return bestJob()}
 function split(ap,w){const tot=w.reduce((a,b)=>a+b,0);if(!tot)return w.map(()=>0);const raw=w.map(x=>x/tot*ap),out=raw.map(Math.floor);
@@ -754,16 +754,18 @@ function runRoutine(ap){
   const P=S.P,rt=P.rt||(P.rt=defaultRoutine());if(P.age<AGE_TRAIN)return '';
   let [t,w,r]=split(ap,[rt.tN,rt.wN,rt.rN]);
   const job=P.age>=AGE_WORK?routineJob():null;if(!job){t+=w;w=0}
-  const tr=byId(TRAIN,rt.train)||TRAIN[0];
+  /* 'balanced' trains whichever stat is currently lowest, one session at a time */
+  const bal=rt.train==='balanced',tr=bal?null:(byId(TRAIN,rt.train)||TRAIN[0]);
+  const pickT=()=>bal?TRAIN.reduce((a,b)=>P.raw[b.st]<P.raw[a.st]?b:a):tr;
   let rests=0;for(let i=0;i<r;i++){if(P.hp<maxHp()*.95||P.mp<maxMp()*.95){restEffect();rests++}else t++}
-  const st0=P.raw[tr.st],g0=P.gold;
-  for(let i=0;i<t;i++){const g=trainGain(tr,0);P.raw[tr.st]+=g.gain/GRADES[4][2];P.mast[tr.id]=Math.min(100,(P.mast[tr.id]||0)+2)}
+  const g0=P.gold;let tg=0;
+  for(let i=0;i<t;i++){const tt=pickT(),g=trainGain(tt,0),v=g.gain/GRADES[4][2];P.raw[tt.st]+=v;tg+=v;P.mast[tt.id]=Math.min(100,(P.mast[tt.id]||0)+2)}
   for(let i=0;i<w;i++){P.gold+=jobPay(job);P.raw[job.st]+=.3*learnMult();P.jobs[job.id]=(P.jobs[job.id]||0)+1}
   let soc=0;
   if(rt.social){const ppl=P.people.filter(p=>p.alive&&p.kind!=='rival').sort((a,b)=>a.bond-b.bond);
     while(P.acts>0&&ppl.length){const p=ppl[0];p.bond=Math.min(100,p.bond+10);P.acts--;soc++;ppl.sort((a,b)=>a.bond-b.bond)}}
   P.energy=0;
-  const parts=[t?`${t} ${tr.n} (+${(P.raw[tr.st]-st0).toFixed(1)} ${STN[tr.st]})`:'',w?`${w} ${job.n} shifts (+${fmt(P.gold-g0)} gold)`:'',rests?`${rests} rest`:'',soc?`${soc} visits`:''].filter(Boolean);
+  const parts=[t?`${t} ${bal?'balanced training sessions':tr.n} (+${tg.toFixed(1)} ${bal?'spread across your lowest stats':STN[tr.st]})`:'',w?`${w} ${job.n} shifts (+${fmt(P.gold-g0)} gold)`:'',rests?`${rests} rest`:'',soc?`${soc} visits`:''].filter(Boolean);
   return parts.length?`Routine: ${parts.join(', ')}.`:'';
 }
 /* ---- aging ---- */
@@ -1227,7 +1229,7 @@ function routineCard(){
   return `<div class="card"><div class="hrow"><h2 id="tE">Activity ${P.energy}/${maxEnergy()}</h2><span class="sm dim">Refills each year</span></div>
   <div class="d">Every action costs activity points. Unspent points are lost when you age up, unless your routine spends them. Playing the mini-games yourself adds up to 20% on top of the routine result.</div>
   <h2 style="font-size:.8rem;margin-top:2px">Yearly routine</h2>
-  <div class="kv" style="align-items:center"><select id="rtT" aria-label="Routine training" style="flex:1">${TRAIN.map(t=>`<option value="${t.id}" ${rt.train===t.id?'selected':''}>${t.n} (${STN[t.st]})</option>`).join('')}</select>${stepper('tN',rt.tN)}</div>
+  <div class="kv" style="align-items:center"><select id="rtT" aria-label="Routine training" style="flex:1"><option value="balanced" ${rt.train==='balanced'?'selected':''}>Balanced (lowest stat first)</option>${TRAIN.map(t=>`<option value="${t.id}" ${rt.train===t.id?'selected':''}>${t.n} (${STN[t.st]})</option>`).join('')}</select>${stepper('tN',rt.tN)}</div>
   <div class="kv" style="align-items:center"><select id="rtJ" aria-label="Routine job" style="flex:1"><option value="best" ${rt.job==='best'?'selected':''}>Best paying job</option>${jobs.map(j=>`<option value="${j.id}" ${rt.job===j.id?'selected':''}>${j.n}</option>`).join('')}</select>${stepper('wN',rt.wN)}</div>
   <div class="kv" style="align-items:center"><span>Recovery <span class="sm dim">(trains instead if unhurt)</span></span>${stepper('rN',rt.rN)}</div>
   <div class="toggle"><span>Keep up relationships<small>Spends leftover social actions on your weakest bonds</small></span><button class="${rt.social?'':'alt'}" data-a="rtsoc">${rt.social?'On':'Off'}</button></div>
@@ -1490,7 +1492,7 @@ document.addEventListener('pointerdown',e=>{
   const b=e.target.closest('[data-a="mg"]');if(!b||b.disabled)return;
   e.preventDefault();mgTap(b.dataset.v);
 });
-document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate)S.fate.name=e.target.value.trim().slice(0,18)});
+document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate){S.fate.name=e.target.value.trim().slice(0,18);S.fate.custom=true}});
 document.addEventListener('change',e=>{const id=e.target.id,v=e.target.value;if(id==='rtT'){S.P.rt.train=v;save()}if(id==='rtJ'){S.P.rt.job=v;save()}if(id==='rtM'){S.rtMode=v;save()}if(e.target.id==='romp'){S.romance=e.target.value;save()}});
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
@@ -1501,8 +1503,10 @@ document.addEventListener('click',e=>{
     case 'tab':tab=v;$('view').scrollTop=0;break;
     case 'ctab':ctab=v;break;
     case 'spin':if(spin(v))flashCat=v;break;
-    case 'rname':S.fate.name=nameFor(S.fate.gender);break;
-    case 'gender':S.fate.gender=v;break;
+    case 'rname':S.fate.name=nameFor(S.fate.gender);S.fate.custom=false;break;
+    case 'gender':{const f=S.fate;f.gender=v;
+      /* keep a name the player typed; otherwise give a name that fits the new gender */
+      if(!f.custom&&!(v==='Female'?FNAMES:MNAMES).includes(f.name))f.name=nameFor(v);break}
     case 'age':{const P=S.P,n=S.ageX||1;
       if(P.energy>0&&P.age>=AGE_TRAIN&&(S.rtMode||'ask')==='ask'){modal='yearend';break}
       ageUp(n,S.rtMode!=='never');break}

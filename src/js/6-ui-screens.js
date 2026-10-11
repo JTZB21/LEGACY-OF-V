@@ -127,7 +127,7 @@ function routineCard(){
   return `<div class="card"><div class="hrow"><h2 id="tE">Activity ${P.energy}/${maxEnergy()}</h2><span class="sm dim">Refills each year</span></div>
   <div class="d">Every action costs activity points. Unspent points are lost when you age up, unless your routine spends them. Playing the mini-games yourself adds up to 20% on top of the routine result.</div>
   <h2 style="font-size:.8rem;margin-top:2px">Yearly routine</h2>
-  <div class="kv" style="align-items:center"><select id="rtT" aria-label="Routine training" style="flex:1">${TRAIN.map(t=>`<option value="${t.id}" ${rt.train===t.id?'selected':''}>${t.n} (${STN[t.st]})</option>`).join('')}</select>${stepper('tN',rt.tN)}</div>
+  <div class="kv" style="align-items:center"><select id="rtT" aria-label="Routine training" style="flex:1"><option value="balanced" ${rt.train==='balanced'?'selected':''}>Balanced (lowest stat first)</option>${TRAIN.map(t=>`<option value="${t.id}" ${rt.train===t.id?'selected':''}>${t.n} (${STN[t.st]})</option>`).join('')}</select>${stepper('tN',rt.tN)}</div>
   <div class="kv" style="align-items:center"><select id="rtJ" aria-label="Routine job" style="flex:1"><option value="best" ${rt.job==='best'?'selected':''}>Best paying job</option>${jobs.map(j=>`<option value="${j.id}" ${rt.job===j.id?'selected':''}>${j.n}</option>`).join('')}</select>${stepper('wN',rt.wN)}</div>
   <div class="kv" style="align-items:center"><span>Recovery <span class="sm dim">(trains instead if unhurt)</span></span>${stepper('rN',rt.rN)}</div>
   <div class="toggle"><span>Keep up relationships<small>Spends leftover social actions on your weakest bonds</small></span><button class="${rt.social?'':'alt'}" data-a="rtsoc">${rt.social?'On':'Off'}</button></div>

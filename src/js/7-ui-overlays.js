@@ -133,7 +133,7 @@ document.addEventListener('pointerdown',e=>{
   const b=e.target.closest('[data-a="mg"]');if(!b||b.disabled)return;
   e.preventDefault();mgTap(b.dataset.v);
 });
-document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate)S.fate.name=e.target.value.trim().slice(0,18)});
+document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate){S.fate.name=e.target.value.trim().slice(0,18);S.fate.custom=true}});
 document.addEventListener('change',e=>{const id=e.target.id,v=e.target.value;if(id==='rtT'){S.P.rt.train=v;save()}if(id==='rtJ'){S.P.rt.job=v;save()}if(id==='rtM'){S.rtMode=v;save()}if(e.target.id==='romp'){S.romance=e.target.value;save()}});
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
@@ -144,8 +144,10 @@ document.addEventListener('click',e=>{
     case 'tab':tab=v;$('view').scrollTop=0;break;
     case 'ctab':ctab=v;break;
     case 'spin':if(spin(v))flashCat=v;break;
-    case 'rname':S.fate.name=nameFor(S.fate.gender);break;
-    case 'gender':S.fate.gender=v;break;
+    case 'rname':S.fate.name=nameFor(S.fate.gender);S.fate.custom=false;break;
+    case 'gender':{const f=S.fate;f.gender=v;
+      /* keep a name the player typed; otherwise give a name that fits the new gender */
+      if(!f.custom&&!(v==='Female'?FNAMES:MNAMES).includes(f.name))f.name=nameFor(v);break}
     case 'age':{const P=S.P,n=S.ageX||1;
       if(P.energy>0&&P.age>=AGE_TRAIN&&(S.rtMode||'ask')==='ask'){modal='yearend';break}
       ageUp(n,S.rtMode!=='never');break}
