@@ -4,7 +4,7 @@ Repository: LEGACY-OF-V
 
 A text-based fantasy progression RPG that runs in the browser. Roll your fate, train through mini-games, fight tactical turn-based battles, climb the ranks of the Vigil and rebirth for permanent upgrades.
 
-**Play:** open `index.html` in a browser. Progress saves in that browser's local storage; use Settings → Export to back it up.
+**Play online:** https://jtzb21.github.io/LEGACY-OF-V/ (or open `index.html` in a browser). Progress saves in that browser's local storage; use Settings → Export to back it up.
 
 ## Features
 - **Fate rolls:** race, bloodline, magic and trait, each across 8 rarity tiers (Common 45% to Secret 0.2%), with free spins, Merit rerolls and exact-fate picks
