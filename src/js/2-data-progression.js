@@ -89,15 +89,25 @@ const EXACT_COST=[5,10,20,40,80,150,300];
 /* jobs: base pay, stat, pay per stat point, requirement */
 const JOBS=[
  {id:'stable',n:'Stablehand',st:'str',b:10,k:.5,req:0,rank:0,d:'Muck stalls and haul feed for the town stables.'},
+ {id:'cisternwalker',n:'Cistern Walker',st:'vit',b:12,k:.5,req:0,rank:0,d:'Walk the village water routes and check each cistern for spoilage.'},
  {id:'courier',n:'Courier',st:'spd',b:14,k:.6,req:20,rank:0,d:'Run letters and parcels between villages.'},
+ {id:'lanternthreader',n:'Lantern Threader',st:'ctl',b:18,k:.6,req:25,rank:0,d:'Fit delicate glow threads into household lanterns.'},
  {id:'scribe',n:'Scribe',st:'int',b:16,k:.7,req:30,rank:0,d:'Copy contracts and old scrolls for the guild hall.'},
  {id:'guard',n:'Caravan Guard',st:'dur',b:30,k:.8,req:45,rank:1,d:'Escort merchant wagons through the Whisperwood.'},
+ {id:'ridgecourier',n:'Ridge Courier',st:'spd',b:32,k:.8,req:50,rank:1,d:'Carry Vigil dispatches along narrow ridge paths.'},
+ {id:'vigilbedsidekeeper',n:'Vigil Bedside Keeper',st:'spr',b:40,k:.8,req:65,rank:1,d:'Keep injured patrol members company through difficult nights.'},
  {id:'apoth',n:'Apothecary Assistant',st:'ctl',b:45,k:.9,req:70,rank:1,d:'Brew remedies. Sometimes you get to keep a Healing Draught.'},
  {id:'tutor',n:'Arcane Tutor',st:'mag',b:70,k:1,req:110,rank:2,d:'Teach noble children their first spells.'},
+ {id:'deepairattendant',n:'Deep Air Attendant',st:'vit',b:72,k:1,req:115,rank:2,d:'Inspect breathing stations along the lower tunnels of the Ashen Mines.'},
+ {id:'wardcalibrator',n:'Ward Calibrator',st:'ctl',b:88,k:1,req:135,rank:2,d:'Adjust defensive wards before small faults become costly breaches.'},
  {id:'chaplain',n:'Vigil Chaplain',st:'spr',b:110,k:1.05,req:170,rank:2,d:'Lead the knights in prayer and keep their spirits steady.'},
+ {id:'spiresrelayrunner',n:'Spires Relay Runner',st:'spd',b:145,k:1.1,req:210,rank:3,d:'Race urgent orders between the watch posts of the Skyward Spires.'},
  {id:'instructor',n:'Vigil Instructor',st:'str',b:150,k:1.1,req:220,rank:3,d:'Drill new squires in the training yard.'},
+ {id:'oathhousekeeper',n:'Oathhouse Keeper',st:'spr',b:175,k:1.1,req:245,rank:3,d:'Guide weary Vigil companies through remembrance and renewed vows.'},
  {id:'bodyguard',n:'Royal Bodyguard',st:'dur',b:260,k:1.2,req:330,rank:4,d:'Stand between nobility and every blade aimed at them.'},
- {id:'archmage',n:'Court Archmage',st:'mag',b:450,k:1.4,req:520,rank:5,d:'Advise the crown on matters of magic and war.'}
+ {id:'riftsealoverseer',n:'Rift Seal Overseer',st:'ctl',b:280,k:1.2,req:350,rank:4,d:'Direct the precise repair of failing seals around Starfall Rift.'},
+ {id:'archmage',n:'Court Archmage',st:'mag',b:450,k:1.4,req:520,rank:5,d:'Advise the crown on matters of magic and war.'},
+ {id:'lastwatchanchor',n:'Last Watch Anchor',st:'spr',b:680,k:1.5,req:720,rank:6,d:'Steady the minds of entire Vigil companies at the edge of the Last Abyss.'}
 ];
 const JOBLV=[0,10,25,50,100,200];
 const JOBT=['Trainee','Regular','Skilled','Senior','Master','Legend'];

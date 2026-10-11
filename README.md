@@ -10,7 +10,7 @@ A text-based fantasy progression RPG that runs in the browser. Roll your fate, t
 - **Fate rolls:** race, bloodline, magic and trait, each across 8 rarity tiers (Common 45% to Secret 0.2%), with free spins, Merit rerolls and exact-fate picks
 - **8 stats** and a Combat Class rating
 - **8 training mini-games** with grades, mastery and gear tiers, plus a passive drill
-- **Work tab:** 10 jobs with stat and rank requirements and promotions
+- **Work tab:** 20 jobs with stat and rank requirements and promotions
 - **Combat:** turn-based with HP, mana and stamina; enemies telegraph moves; block, dodge, heavy blows and magic skills
 - **7 regions, 14 bosses, 6 rank trials, an armory and potions**
 - **Rebirth:** end a life for Merit, which buys permanent upgrades; a codex rewards first-time discoveries
