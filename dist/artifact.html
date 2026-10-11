@@ -117,6 +117,8 @@ h2{font-size:.95rem;color:var(--gold2);text-transform:uppercase;text-align:cente
 .toggle{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #1d1a14}
 .toggle span{font-size:.86rem} .toggle small{display:block;color:var(--dim);font-size:.75rem}
 .toggle button{min-width:72px}
+/* Long character names must not push phone controls outside their panels. */
+.hrow h1,.card,.ov .box{overflow-wrap:anywhere}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <div id="app">
@@ -596,14 +598,53 @@ function rebirth(){
 function tick(dt){}
 function offline(){return ''}
 function save(){try{S.last=Date.now();localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.v===3){S=o;S.assist=S.assist||{};migrate();return true}}}catch(e){}return false}
+function restoreSave(o){
+  const previous=S,record=x=>x&&typeof x==='object'&&!Array.isArray(x),num=x=>Number.isFinite(x)&&x>=0;
+  const nums=x=>record(x)&&Object.values(x).every(num),fate=x=>record(x)&&CATS.every(([k,,list])=>byId(list,x[k]));
+  try{
+    // Fill containers that older saves never had, and clamp bonds, instead of rejecting the save.
+    if(record(o)&&record(o.P)){const P=o.P;
+      ['mast','tier','jobs','bosses','streak','pot'].forEach(k=>{if(!record(P[k]))P[k]={}});
+      ['owned','titles','log'].forEach(k=>{if(!Array.isArray(P[k]))P[k]=[]});
+      if(!num(P.wins))P.wins=0;
+      if(Array.isArray(P.people))P.people.forEach(p=>{if(record(p)&&Number.isFinite(p.bond))p.bond=clamp(p.bond,0,100)});
+    }
+    if(!o||o.v!==3||!['create','play'].includes(o.phase)||!num(o.merit)||!num(o.lives)||!nums(o.lp)||!Array.isArray(o.hall)||!record(o.codex)||!CATS.every(([k])=>record(o.codex[k])))throw 0;
+    if(!fate(o.fate)||typeof o.fate.name!=='string'||!nums(o.fate.spins)||!CATS.every(([k])=>num(o.fate.spins[k])))throw 0;
+    // Reserve levels above three are valid in older saves, up to the old cap.
+    if(!LEGACY.every(u=>o.lp[u.id]==null||(Number.isInteger(o.lp[u.id])&&o.lp[u.id]<=(u.id==='reserve'?15:u.max))))throw 0;
+    const P=o.P;
+    if(o.phase==='play'&&!P)throw 0;
+    if(P){
+      if(!fate(P)||typeof P.name!=='string'||(P.back!=='heir'&&!byId(BACKS,P.back))||!record(P.raw)||!STK.every(k=>num(P.raw[k])))throw 0;
+      if(!['mast','tier','jobs','bosses','streak','pot'].every(k=>nums(P[k]))||!['owned','titles','log'].every(k=>Array.isArray(P[k])))throw 0;
+      if(!['mxp','rxp','gold','energy','wins','hp','mp'].every(k=>num(P[k]))||!Number.isInteger(P.rank)||!RANKS[P.rank]||!Number.isInteger(P.mlv)||P.mlv<1)throw 0;
+      if(!Object.values(P.tier).every(n=>Number.isInteger(n)&&n<TIERM.length)||!Object.values(P.mast).every(n=>n<=100))throw 0;
+      if(P.age!=null){
+        if(!num(P.age)||!num(P.life)||!P.life||!num(P.acts)||!Array.isArray(P.people))throw 0;
+        if(!P.people.every(p=>record(p)&&byId(RACES,p.race)&&REL_KIND[p.kind]&&typeof p.name==='string'&&['age','life','bond'].every(k=>num(p[k]))&&(p.kind!=='child'||fate(p))))throw 0;
+      }
+      if(P.ev!=null&&(!Number.isInteger(P.ev)||!EVENTS[P.ev]))throw 0;
+      if(P.rt!=null&&(!record(P.rt)||!['tN','wN','rN'].every(k=>Number.isInteger(P.rt[k])&&P.rt[k]>=0&&P.rt[k]<=15)))throw 0;
+    }
+    S=o;S.assist=S.assist||{};migrate();
+    if(P&&(!STK.every(k=>Number.isFinite(eff(k)))||![maxHp(),maxMp(),combatClass()].every(Number.isFinite)))throw 0;
+    return true;
+  }catch(e){S=previous;return false}
+}
+let loadFailed=false;
+/* If a stored save cannot be read, keep a copy before the game starts fresh, so autosave never destroys it. */
+function load(){let r=null;
+  try{r=localStorage.getItem(KEY);if(!r)return false;if(restoreSave(JSON.parse(r)))return true}catch(e){}
+  try{localStorage.setItem(KEY+'_backup_'+Date.now(),r);loadFailed=true}catch(e){}
+  return false}
 function migrate(){
   if(S.fate&&!S.fate.gender)S.fate.gender='Male';
   if(S.rtMode==null)S.rtMode='ask';
+  if((S.lp.reserve||0)>3){let r=0;for(let l=4;l<=S.lp.reserve;l++)r+=20*l;S.merit+=r;S.lp.reserve=3;S.refund=r}
   const P=S.P;if(!P)return;
   if(P.age==null){P.age=ADULT;P.gender=P.gender||'Male';P.life=rollLife(P.race);P.gen=1;P.acts=4;P.dead=false;P.ev=null;makeFamily(P);P.people.forEach(p=>p.age+=ADULT)}
   if(P.rt==null){P.rt=defaultRoutine();P.energy=P.age>=AGE_TRAIN?maxEnergy():0;delete P.ectr;delete P.drill}
-  if((S.lp.reserve||0)>3){let r=0;for(let l=4;l<=S.lp.reserve;l++)r+=20*l;S.merit+=r;S.lp.reserve=3;S.refund=r}
 }
 /* ===== LIFE SIM ===== */
 const AGE_TRAIN=3,AGE_FIGHT=6,AGE_WORK=10,AGE_TRIAL=12,ADULT=18;
@@ -704,25 +745,27 @@ function haveChild(sp){
 }
 
 /* ---- yearly routine ---- */
-function defaultRoutine(){return {train:'boulder',tN:6,job:'best',wN:4,rN:2,social:true}}
+function defaultRoutine(){return {train:'balanced',tN:6,job:'best',wN:4,rN:2,social:true}}
 function bestJob(){let b=null;JOBS.forEach(j=>{if(jobOpen(j)&&(!b||jobPay(j)>jobPay(b)))b=j});return b}
 function routineJob(){const P=S.P,rt=P.rt;if(rt.job!=='best'){const j=byId(JOBS,rt.job);if(j&&jobOpen(j))return j}return bestJob()}
-function split(ap,w){const tot=w.reduce((a,b)=>a+b,0)||1,raw=w.map(x=>x/tot*ap),out=raw.map(Math.floor);
+function split(ap,w){const tot=w.reduce((a,b)=>a+b,0);if(!tot)return w.map(()=>0);const raw=w.map(x=>x/tot*ap),out=raw.map(Math.floor);
   let left=ap-out.reduce((a,b)=>a+b,0);raw.map((x,i)=>[x-out[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){out[i]++;left--}});return out}
 function runRoutine(ap){
-  const P=S.P,rt=P.rt||(P.rt=defaultRoutine());if(ap<=0||P.age<AGE_TRAIN)return '';
+  const P=S.P,rt=P.rt||(P.rt=defaultRoutine());if(P.age<AGE_TRAIN)return '';
   let [t,w,r]=split(ap,[rt.tN,rt.wN,rt.rN]);
   const job=P.age>=AGE_WORK?routineJob():null;if(!job){t+=w;w=0}
-  const tr=byId(TRAIN,rt.train)||TRAIN[0];
+  /* 'balanced' trains whichever stat is currently lowest, one session at a time */
+  const bal=rt.train==='balanced',tr=bal?null:(byId(TRAIN,rt.train)||TRAIN[0]);
+  const pickT=()=>bal?TRAIN.reduce((a,b)=>P.raw[b.st]<P.raw[a.st]?b:a):tr;
   let rests=0;for(let i=0;i<r;i++){if(P.hp<maxHp()*.95||P.mp<maxMp()*.95){restEffect();rests++}else t++}
-  const st0=P.raw[tr.st],g0=P.gold;
-  for(let i=0;i<t;i++){const g=trainGain(tr,0);P.raw[tr.st]+=g.gain/GRADES[4][2];P.mast[tr.id]=Math.min(100,(P.mast[tr.id]||0)+2)}
+  const g0=P.gold;let tg=0;
+  for(let i=0;i<t;i++){const tt=pickT(),g=trainGain(tt,0),v=g.gain/GRADES[4][2];P.raw[tt.st]+=v;tg+=v;P.mast[tt.id]=Math.min(100,(P.mast[tt.id]||0)+2)}
   for(let i=0;i<w;i++){P.gold+=jobPay(job);P.raw[job.st]+=.3*learnMult();P.jobs[job.id]=(P.jobs[job.id]||0)+1}
   let soc=0;
   if(rt.social){const ppl=P.people.filter(p=>p.alive&&p.kind!=='rival').sort((a,b)=>a.bond-b.bond);
-    while(P.acts>0&&ppl.length){const p=ppl[soc%ppl.length];p.bond=Math.min(100,p.bond+10);P.acts--;soc++;ppl.sort((a,b)=>a.bond-b.bond)}}
+    while(P.acts>0&&ppl.length){const p=ppl[0];p.bond=Math.min(100,p.bond+10);P.acts--;soc++;ppl.sort((a,b)=>a.bond-b.bond)}}
   P.energy=0;
-  const parts=[t?`${t} ${tr.n} (+${(P.raw[tr.st]-st0).toFixed(1)} ${STN[tr.st]})`:'',w?`${w} ${job.n} shifts (+${fmt(P.gold-g0)} gold)`:'',rests?`${rests} rest`:'',soc?`${soc} visits`:''].filter(Boolean);
+  const parts=[t?`${t} ${bal?'balanced training sessions':tr.n} (+${tg.toFixed(1)} ${bal?'spread across your lowest stats':STN[tr.st]})`:'',w?`${w} ${job.n} shifts (+${fmt(P.gold-g0)} gold)`:'',rests?`${rests} rest`:'',soc?`${soc} visits`:''].filter(Boolean);
   return parts.length?`Routine: ${parts.join(', ')}.`:'';
 }
 /* ---- aging ---- */
@@ -1059,6 +1102,7 @@ function mgLoop(){
 }
 /* ===== UI: SCREENS ===== */
 const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let modal=null,flashCat=null;
 const rc=r=>RAR[r].c;
 const rtag=it=>`<span style="color:${rc(it.r)}">${it.n}</span>`;
@@ -1082,7 +1126,7 @@ function hud(){
     return;
   }
   const P=S.P;
-  $('hud').innerHTML=`<div class="hrow"><h1>${P.name} <span class="cc num" style="font-size:.9rem">CC <span id="hCC">${combatClass()}</span></span></h1>
+  $('hud').innerHTML=`<div class="hrow"><h1>${esc(P.name)} <span class="cc num" style="font-size:.9rem">CC <span id="hCC">${combatClass()}</span></span></h1>
   <div class="cur"><span>G <b class="g num" id="hG">${fmt(P.gold)}</b></span><span>M <b class="m num" id="hM">${fmt(S.merit)}</b></span>
   <span>Activity <b class="e num" id="hE">${P.energy}/${maxEnergy()}</b></span>
   <button class="alt" data-a="modal" data-v="settings" style="min-height:30px;padding:3px 10px;font-size:.72rem">Settings</button></div></div>
@@ -1128,7 +1172,7 @@ function vCreate(){
     </div>
     <div class="card">
       <h2>Create your legend</h2>
-      <div class="btns"><input id="fname" maxlength="18" value="${f.name}" aria-label="Character name"><button class="alt" data-a="rname" style="flex:0 0 auto">Random</button></div>
+      <div class="btns"><input id="fname" maxlength="18" value="${esc(f.name)}" aria-label="Character name"><button class="alt" data-a="rname" style="flex:0 0 auto">Random</button></div>
       <div class="btns">${['Male','Female'].map(g=>`<button data-a="gender" data-v="${g}" class="${f.gender===g?'':'alt'}">${g}</button>`).join('')}</div>
       <div class="summary"><div style="text-align:center;font-weight:800;color:var(--crim)">CURRENT FATE</div>
       ${CATS.map(([k,n,l])=>{const x=byId(l,f[k]);return `<div>${n}: <b>${x.n}</b> <span class="pill" style="color:${x.r>=6?'#7a5a00':'var(--crim)'}">${RAR[x.r].n}</span></div>`}).join('')}</div>
@@ -1144,7 +1188,7 @@ function vYou(){
   const P=S.P,e=effAll(),st=raceStage(),stg=race().st.split('|'),nx=RACE_XP[st];
   const sk=magic().sk,un=skillsUnlocked(),w=P.wpn&&byId(GEAR,P.wpn),fo=P.foc&&byId(GEAR,P.foc);
   return `<div class="grid">
-  <div class="card"><h2>${P.name}</h2><div class="d">${P.gender} · Age ${P.age} (${stage()}) · Lifespan about ${P.life}<br>Generation ${P.gen||1} · ${P.back==='heir'?P.backN:byId(BACKS,P.back).n}</div>
+  <div class="card"><h2>${esc(P.name)}</h2><div class="d">${P.gender} · Age ${P.age} (${stage()}) · Lifespan about ${P.life}<br>Generation ${P.gen||1} · ${esc(P.back==='heir'?P.backN:byId(BACKS,P.back).n)}</div>
     <div class="kv"><span>Race</span><b>${rtag(race())}</b></div>
     <div class="kv"><span>Bloodline</span><b>${rtag(bl())}</b></div>
     <div class="kv"><span>Innate magic</span><b>${rtag(magic())}</b></div>
@@ -1171,7 +1215,7 @@ function vYou(){
     ${sk.map((s,i)=>`<div class="kv"><span>${i<un?'◆':'◇'} <b>${s[0]}</b><br><span class="sm dim">${EFFN[s[3]]||'Damage'}${s[2]?` · power ${s[2]}`:''}</span></span><b class="num sm">${i<un?s[1]+'% mana':'Mastery '+SK_UNLOCK[i]}</b></div>`).join('')}
     <div class="sm dim">Awakenings at mastery 20 and 35, each +40% magic power${P.mlv>=20?' (active)':''}. Gain mastery by casting in combat and through Energy Balance.</div>
   </div>
-  <div class="card parch"><h2>Chronicle</h2><div class="log">${P.log.slice(0,12).map(x=>`<p>${x}</p>`).join('')}</div></div>
+  <div class="card parch"><h2>Chronicle</h2><div class="log">${P.log.slice(0,12).map(x=>`<p>${esc(x)}</p>`).join('')}</div></div>
   <div class="card"><h2>End this life</h2><div class="d">Rebirth carries ${rebirthMerit()} Merit into a new life. Merit buys permanent upgrades and fate rerolls. Everything else resets.</div>
     <button class="alt" data-a="rebirth">Rebirth for ${rebirthMerit()} Merit</button></div>
   </div>`;
@@ -1185,7 +1229,7 @@ function routineCard(){
   return `<div class="card"><div class="hrow"><h2 id="tE">Activity ${P.energy}/${maxEnergy()}</h2><span class="sm dim">Refills each year</span></div>
   <div class="d">Every action costs activity points. Unspent points are lost when you age up, unless your routine spends them. Playing the mini-games yourself adds up to 20% on top of the routine result.</div>
   <h2 style="font-size:.8rem;margin-top:2px">Yearly routine</h2>
-  <div class="kv" style="align-items:center"><select id="rtT" aria-label="Routine training" style="flex:1">${TRAIN.map(t=>`<option value="${t.id}" ${rt.train===t.id?'selected':''}>${t.n} (${STN[t.st]})</option>`).join('')}</select>${stepper('tN',rt.tN)}</div>
+  <div class="kv" style="align-items:center"><select id="rtT" aria-label="Routine training" style="flex:1"><option value="balanced" ${rt.train==='balanced'?'selected':''}>Balanced (lowest stat first)</option>${TRAIN.map(t=>`<option value="${t.id}" ${rt.train===t.id?'selected':''}>${t.n} (${STN[t.st]})</option>`).join('')}</select>${stepper('tN',rt.tN)}</div>
   <div class="kv" style="align-items:center"><select id="rtJ" aria-label="Routine job" style="flex:1"><option value="best" ${rt.job==='best'?'selected':''}>Best paying job</option>${jobs.map(j=>`<option value="${j.id}" ${rt.job===j.id?'selected':''}>${j.n}</option>`).join('')}</select>${stepper('wN',rt.wN)}</div>
   <div class="kv" style="align-items:center"><span>Recovery <span class="sm dim">(trains instead if unhurt)</span></span>${stepper('rN',rt.rN)}</div>
   <div class="toggle"><span>Keep up relationships<small>Spends leftover social actions on your weakest bonds</small></span><button class="${rt.social?'':'alt'}" data-a="rtsoc">${rt.social?'On':'Off'}</button></div>
@@ -1269,7 +1313,7 @@ function vLeg(){
   <div class="card"><h2>Merit ${fmt(S.merit)}</h2><div class="d">Permanent upgrades that last across every life.</div>${legacyList()}</div>
   <div class="card"><h2>Codex</h2><div class="d">First time you roll anything earns Merit, more for rarer finds.</div><div class="sm" style="text-align:center">${tot}</div>
     ${CATS.map(([k,n,l])=>`<div class="sm"><b>${n}:</b> ${l.map(x=>S.codex[k][x.id]?`<span style="color:${rc(x.r)}">${x.n}</span>`:'<span class="dim">???</span>').join(', ')}</div>`).join('')}</div>
-  <div class="card"><h2>Past lives</h2>${S.hall.length?S.hall.map(h=>`<div class="kv"><span>Life ${h.life} · ${h.name}<br><span class="sm dim">${h.race}, ${h.mag}</span></span><b class="sm">CC ${h.cc} · ${h.rank}<br>+${h.merit} M</b></div>`).join(''):'<div class="d">This is your first life.</div>'}</div>
+  <div class="card"><h2>Past lives</h2>${S.hall.length?S.hall.map(h=>`<div class="kv"><span>Life ${h.life} · ${esc(h.name)}<br><span class="sm dim">${h.race}, ${h.mag}</span></span><b class="sm">CC ${h.cc} · ${h.rank}<br>+${h.merit} M</b></div>`).join(''):'<div class="d">This is your first life.</div>'}</div>
   </div>`;
 }
 function vWork(){
@@ -1289,7 +1333,7 @@ function vPeople(){
   const P=S.P,sp=canChild(),gc=giftCost(),noAct=P.acts<=0;
   const btn=(p,a,l,ok)=>`<button class="alt" data-a="ppl" data-v="${p.id}:${a}" ${ok===false||noAct&&a!=='duel'?'disabled':''} style="min-height:36px;padding:6px 8px;font-size:.72rem">${l}</button>`;
   const card=p=>{
-    if(!p.alive)return `<div class="kv"><span>${p.name} <span class="dim sm">· ${relName(p)}</span></span><b class="dim sm">Died at ${p.age}</b></div>`;
+    if(!p.alive)return `<div class="kv"><span>${esc(p.name)} <span class="dim sm">· ${relName(p)}</span></span><b class="dim sm">Died at ${p.age}</b></div>`;
     const b=[btn(p,'time','Spend time'),btn(p,'gift',`Gift ${gc}g`,P.gold>=gc)];
     if(p.kind!=='rival'&&P.age>=AGE_TRAIN)b.push(btn(p,'train',p.kind==='mentor'?'Learn':'Train together'));
     if(p.kind==='rival'&&P.age>=AGE_FIGHT)b.push(`<button data-a="ppl" data-v="${p.id}:duel" data-ce="1" style="min-height:36px;padding:6px 8px;font-size:.72rem">Duel · 1 AP</button>`);
@@ -1299,7 +1343,7 @@ function vPeople(){
     if(p.kind!=='family'&&p.kind!=='child')b.push(btn(p,'leave',p.kind==='spouse'?'Divorce':p.kind==='partner'?'Break up':'Drift apart'));
     const extra=p.kind==='child'?`<div class="sm">${rtag(byId(RACES,p.race))} · ${rtag(byId(BLOODS,p.bl))} · ${rtag(byId(MAGICS,p.mag))} · ${rtag(byId(TRAITS,p.trait))}</div>`
       :p.kind==='mentor'?`<div class="sm dim">Teaches ${STN[p.st]}</div>`:'';
-    return `<div class="card" style="background:var(--panel2)"><div class="hrow"><b>${p.name}</b><span class="pill" style="color:var(--gold2)">${relName(p)}</span></div>
+    return `<div class="card" style="background:var(--panel2)"><div class="hrow"><b>${esc(p.name)}</b><span class="pill" style="color:var(--gold2)">${relName(p)}</span></div>
       <div class="sm dim">${p.gender} · ${byId(RACES,p.race).n} · Age ${p.age}</div>${extra}
       ${bar(p.kind==='rival'?'':'xp',p.bond,100,p.kind==='rival'?'Respect':'Bond')}<div class="btns" style="flex-wrap:wrap">${b.join('')}</div></div>`;
   };
@@ -1327,6 +1371,7 @@ function renderOv(){
   const o=$('ov');
   let h='';
   if(C)h=vCombat();else if(MG)h=vMG();else if(S.phase==='play'&&S.P&&S.P.dead)h=vDeath();else if(S.phase==='play'&&S.P&&S.P.ev!=null)h=vEvent();else if(modal)h=vModal();
+  $('app').inert=!!h;
   if(!h){o.hidden=true;o.innerHTML='';return}
   o.hidden=false;o.innerHTML=`<div class="box" ${C?'style="max-width:620px"':''}>${h}</div>`;
   if(MG)mgUpdate();
@@ -1355,13 +1400,13 @@ function vCombat(){
     <div class="btns"><button class="alt" data-a="leave">Continue</button>${C.kind==='region'&&C.over==='win'?`<button data-a="again" data-ce="1">Explore again · 1</button>`:''}</div>`;
   }
   const warn=INTW[f.intent];
-  return `<div class="unit"><div class="nm"><span>${f.n}</span><span class="cc num">CC ${f.cc}</span></div>
+  return `<div class="unit"><div class="nm"><span>${esc(f.n)}</span><span class="cc num">CC ${f.cc}</span></div>
     ${bar('',f.hp,f.max,'HP')}<div class="chips">${fc.map(chip).join('')}</div>
     ${!C.over?`<div class="intent ${warn?'warn':''}">Next: ${INTN[f.intent]}${f.intent==='unleash'?' (block or dodge!)':''}</div>`:''}</div>
-  <div class="unit"><div class="nm"><span>${P.name}</span><span class="cc num">CC ${combatClass()}</span></div>
+  <div class="unit"><div class="nm"><span>${esc(P.name)}</span><span class="cc num">CC ${combatClass()}</span></div>
     ${bar('',p.hp,p.max,'HP')}${bar('mp',p.mp,p.mmax,'Mana')}${bar('st',p.st,p.smax,'Stamina')}<div class="chips">${pc.map(chip).join('')}</div></div>
   ${body}
-  <div class="clog">${C.log.slice(0,8).map(l=>`<p>${l}</p>`).join('')}</div>`;
+  <div class="clog">${C.log.slice(0,8).map(l=>`<p>${esc(l)}</p>`).join('')}</div>`;
 }
 /* ---- mini-game view ---- */
 function vMG(){
@@ -1410,9 +1455,9 @@ function vEvent(){const P=S.P,e=EVENTS[P.ev];
   return `<div class="sm dim" style="text-align:center">AGE ${P.age} · ${stage().toUpperCase()}</div><div style="font-size:1.05rem;text-align:center;font-weight:600">${e.t}</div>
   ${e.c.map((c,i)=>`<button data-a="evc" data-v="${i}">${c[0]}</button>`).join('')}`}
 function vDeath(){const P=S.P,h=heirs(),m=rebirthMerit();
-  return `<h2>${P.name} has died</h2><div class="d">Died at age ${P.age} as ${RANKS[P.rank].n}, Combat Class ${combatClass()}. This life earns <b style="color:var(--fg)">${m} Merit</b>.</div>
+  return `<h2>${esc(P.name)} has died</h2><div class="d">Died at age ${P.age} as ${RANKS[P.rank].n}, Combat Class ${combatClass()}. This life earns <b style="color:var(--fg)">${m} Merit</b>.</div>
   ${h.length?`<div class="sm" style="text-align:center;color:var(--gold2)">Continue the bloodline as an heir. They inherit half your gold, your gear and your training grounds.</div>
-  ${h.map(k=>`<button data-a="heir" data-v="${k.id}">${k.name}, age ${k.age} · ${byId(RACES,k.race).n} · <span style="color:${rc(byId(MAGICS,k.mag).r)}">${byId(MAGICS,k.mag).n}</span></button>`).join('')}`:'<div class="d">You leave no heirs.</div>'}
+  ${h.map(k=>`<button data-a="heir" data-v="${k.id}">${esc(k.name)}, age ${k.age} · ${byId(RACES,k.race).n} · <span style="color:${rc(byId(MAGICS,k.mag).r)}">${byId(MAGICS,k.mag).n}</span></button>`).join('')}`:'<div class="d">You leave no heirs.</div>'}
   <button class="alt" data-a="newlife">Begin a new life (roll fate)</button>`}
 /* ---- modals ---- */
 function vModal(){
@@ -1430,7 +1475,7 @@ function vModal(){
     <button data-a="yearend" data-v="use">Use them on my routine</button><button class="alt" data-a="yearend" data-v="always">Always use routine (don't ask again)</button>
     <button class="alt" data-a="yearend" data-v="skip">Age up without them</button><button class="ghost" data-a="close">Cancel</button>`}
   if(modal==='legacy')return `<h2>Merit upgrades</h2><div class="d">You have ${S.merit} Merit.</div>${legacyList()}<button class="alt" data-a="close">Close</button>`;
-  if(modal==='reb')return `<h2>End this life?</h2><div class="d">${S.P.name}'s story ends here. You carry ${rebirthMerit()} Merit, your upgrades and your codex into a new life. Stats, gold, gear and rank reset.</div>
+  if(modal==='reb')return `<h2>End this life?</h2><div class="d">${esc(S.P.name)}'s story ends here. You carry ${rebirthMerit()} Merit, your upgrades and your codex into a new life. Stats, gold, gear and rank reset.</div>
     <div class="btns"><button class="alt" data-a="close">Keep living</button><button data-a="dorebirth">Rebirth</button></div>`;
   if(modal==='settings')return `<h2>Settings</h2>
     <div class="d">Assists are optional and free. They replace paid passes and are off by default.</div>
@@ -1447,18 +1492,21 @@ document.addEventListener('pointerdown',e=>{
   const b=e.target.closest('[data-a="mg"]');if(!b||b.disabled)return;
   e.preventDefault();mgTap(b.dataset.v);
 });
-document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate)S.fate.name=e.target.value.trim().slice(0,18)});
+document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate){S.fate.name=e.target.value.trim().slice(0,18);S.fate.custom=true}});
 document.addEventListener('change',e=>{const id=e.target.id,v=e.target.value;if(id==='rtT'){S.P.rt.train=v;save()}if(id==='rtJ'){S.P.rt.job=v;save()}if(id==='rtM'){S.rtMode=v;save()}if(e.target.id==='romp'){S.romance=e.target.value;save()}});
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
+  if(!$('ov').hidden&&!$('ov').contains(b))return;
   const a=b.dataset.a,v=b.dataset.v;
   if(a==='mg')return;
   switch(a){
     case 'tab':tab=v;$('view').scrollTop=0;break;
     case 'ctab':ctab=v;break;
     case 'spin':if(spin(v))flashCat=v;break;
-    case 'rname':S.fate.name=nameFor(S.fate.gender);break;
-    case 'gender':S.fate.gender=v;break;
+    case 'rname':S.fate.name=nameFor(S.fate.gender);S.fate.custom=false;break;
+    case 'gender':{const f=S.fate;f.gender=v;
+      /* keep a name the player typed; otherwise give a name that fits the new gender */
+      if(!f.custom&&!(v==='Female'?FNAMES:MNAMES).includes(f.name))f.name=nameFor(v);break}
     case 'age':{const P=S.P,n=S.ageX||1;
       if(P.energy>0&&P.age>=AGE_TRAIN&&(S.rtMode||'ask')==='ask'){modal='yearend';break}
       ageUp(n,S.rtMode!=='never');break}
@@ -1495,7 +1543,7 @@ document.addEventListener('click',e=>{
     case 'exp':{const code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));$('sv').value=code;$('sv').select();
       try{navigator.clipboard.writeText(code).then(()=>$('svMsg').textContent='Copied to clipboard.').catch(()=>{$('svMsg').textContent='Select the code and copy it.'})}catch(x){$('svMsg').textContent='Select the code and copy it.'}
       return}
-    case 'imp':try{const o=JSON.parse(decodeURIComponent(escape(atob($('sv').value.trim()))));if(!o||o.v!==3)throw 0;S=o;S.assist=S.assist||{};C=null;MG=null;modal=null;save()}catch(x){$('svMsg').textContent='That code did not work. Check it was copied in full.';return}break;
+    case 'imp':try{const o=JSON.parse(decodeURIComponent(escape(atob($('sv').value.trim()))));if(!restoreSave(o))throw 0;C=null;MG=null;modal=null;save()}catch(x){$('svMsg').textContent='That code did not work. Check it was copied in full.';return}break;
     case 'reset':if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to erase everything';return}
       try{localStorage.removeItem(KEY)}catch(x){}freshSave();C=null;MG=null;modal=null;tab='you';break;
   }
@@ -1503,6 +1551,7 @@ document.addEventListener('click',e=>{
 });
 function boot(){
   if(!load())freshSave();
+  if(loadFailed)setTimeout(()=>toast('Your previous save could not be read. A backup copy was kept in this browser.'),300);
   const msg=offline();
   render();if(msg)toast(msg);
   if(S.refund){toast(`Energy upgrades changed. Refunded ${S.refund} Merit for Deep Reserves levels above 3.`);delete S.refund;save()}

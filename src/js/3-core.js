@@ -166,12 +166,51 @@ function rebirth(){
 function tick(dt){}
 function offline(){return ''}
 function save(){try{S.last=Date.now();localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.v===3){S=o;S.assist=S.assist||{};migrate();return true}}}catch(e){}return false}
+function restoreSave(o){
+  const previous=S,record=x=>x&&typeof x==='object'&&!Array.isArray(x),num=x=>Number.isFinite(x)&&x>=0;
+  const nums=x=>record(x)&&Object.values(x).every(num),fate=x=>record(x)&&CATS.every(([k,,list])=>byId(list,x[k]));
+  try{
+    // Fill containers that older saves never had, and clamp bonds, instead of rejecting the save.
+    if(record(o)&&record(o.P)){const P=o.P;
+      ['mast','tier','jobs','bosses','streak','pot'].forEach(k=>{if(!record(P[k]))P[k]={}});
+      ['owned','titles','log'].forEach(k=>{if(!Array.isArray(P[k]))P[k]=[]});
+      if(!num(P.wins))P.wins=0;
+      if(Array.isArray(P.people))P.people.forEach(p=>{if(record(p)&&Number.isFinite(p.bond))p.bond=clamp(p.bond,0,100)});
+    }
+    if(!o||o.v!==3||!['create','play'].includes(o.phase)||!num(o.merit)||!num(o.lives)||!nums(o.lp)||!Array.isArray(o.hall)||!record(o.codex)||!CATS.every(([k])=>record(o.codex[k])))throw 0;
+    if(!fate(o.fate)||typeof o.fate.name!=='string'||!nums(o.fate.spins)||!CATS.every(([k])=>num(o.fate.spins[k])))throw 0;
+    // Reserve levels above three are valid in older saves, up to the old cap.
+    if(!LEGACY.every(u=>o.lp[u.id]==null||(Number.isInteger(o.lp[u.id])&&o.lp[u.id]<=(u.id==='reserve'?15:u.max))))throw 0;
+    const P=o.P;
+    if(o.phase==='play'&&!P)throw 0;
+    if(P){
+      if(!fate(P)||typeof P.name!=='string'||(P.back!=='heir'&&!byId(BACKS,P.back))||!record(P.raw)||!STK.every(k=>num(P.raw[k])))throw 0;
+      if(!['mast','tier','jobs','bosses','streak','pot'].every(k=>nums(P[k]))||!['owned','titles','log'].every(k=>Array.isArray(P[k])))throw 0;
+      if(!['mxp','rxp','gold','energy','wins','hp','mp'].every(k=>num(P[k]))||!Number.isInteger(P.rank)||!RANKS[P.rank]||!Number.isInteger(P.mlv)||P.mlv<1)throw 0;
+      if(!Object.values(P.tier).every(n=>Number.isInteger(n)&&n<TIERM.length)||!Object.values(P.mast).every(n=>n<=100))throw 0;
+      if(P.age!=null){
+        if(!num(P.age)||!num(P.life)||!P.life||!num(P.acts)||!Array.isArray(P.people))throw 0;
+        if(!P.people.every(p=>record(p)&&byId(RACES,p.race)&&REL_KIND[p.kind]&&typeof p.name==='string'&&['age','life','bond'].every(k=>num(p[k]))&&(p.kind!=='child'||fate(p))))throw 0;
+      }
+      if(P.ev!=null&&(!Number.isInteger(P.ev)||!EVENTS[P.ev]))throw 0;
+      if(P.rt!=null&&(!record(P.rt)||!['tN','wN','rN'].every(k=>Number.isInteger(P.rt[k])&&P.rt[k]>=0&&P.rt[k]<=15)))throw 0;
+    }
+    S=o;S.assist=S.assist||{};migrate();
+    if(P&&(!STK.every(k=>Number.isFinite(eff(k)))||![maxHp(),maxMp(),combatClass()].every(Number.isFinite)))throw 0;
+    return true;
+  }catch(e){S=previous;return false}
+}
+let loadFailed=false;
+/* If a stored save cannot be read, keep a copy before the game starts fresh, so autosave never destroys it. */
+function load(){let r=null;
+  try{r=localStorage.getItem(KEY);if(!r)return false;if(restoreSave(JSON.parse(r)))return true}catch(e){}
+  try{localStorage.setItem(KEY+'_backup_'+Date.now(),r);loadFailed=true}catch(e){}
+  return false}
 function migrate(){
   if(S.fate&&!S.fate.gender)S.fate.gender='Male';
   if(S.rtMode==null)S.rtMode='ask';
+  if((S.lp.reserve||0)>3){let r=0;for(let l=4;l<=S.lp.reserve;l++)r+=20*l;S.merit+=r;S.lp.reserve=3;S.refund=r}
   const P=S.P;if(!P)return;
   if(P.age==null){P.age=ADULT;P.gender=P.gender||'Male';P.life=rollLife(P.race);P.gen=1;P.acts=4;P.dead=false;P.ev=null;makeFamily(P);P.people.forEach(p=>p.age+=ADULT)}
   if(P.rt==null){P.rt=defaultRoutine();P.energy=P.age>=AGE_TRAIN?maxEnergy():0;delete P.ectr;delete P.drill}
-  if((S.lp.reserve||0)>3){let r=0;for(let l=4;l<=S.lp.reserve;l++)r+=20*l;S.merit+=r;S.lp.reserve=3;S.refund=r}
 }

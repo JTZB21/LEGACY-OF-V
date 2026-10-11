@@ -1,5 +1,6 @@
 /* ===== UI: SCREENS ===== */
 const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let modal=null,flashCat=null;
 const rc=r=>RAR[r].c;
 const rtag=it=>`<span style="color:${rc(it.r)}">${it.n}</span>`;
@@ -23,7 +24,7 @@ function hud(){
     return;
   }
   const P=S.P;
-  $('hud').innerHTML=`<div class="hrow"><h1>${P.name} <span class="cc num" style="font-size:.9rem">CC <span id="hCC">${combatClass()}</span></span></h1>
+  $('hud').innerHTML=`<div class="hrow"><h1>${esc(P.name)} <span class="cc num" style="font-size:.9rem">CC <span id="hCC">${combatClass()}</span></span></h1>
   <div class="cur"><span>G <b class="g num" id="hG">${fmt(P.gold)}</b></span><span>M <b class="m num" id="hM">${fmt(S.merit)}</b></span>
   <span>Activity <b class="e num" id="hE">${P.energy}/${maxEnergy()}</b></span>
   <button class="alt" data-a="modal" data-v="settings" style="min-height:30px;padding:3px 10px;font-size:.72rem">Settings</button></div></div>
@@ -69,7 +70,7 @@ function vCreate(){
     </div>
     <div class="card">
       <h2>Create your legend</h2>
-      <div class="btns"><input id="fname" maxlength="18" value="${f.name}" aria-label="Character name"><button class="alt" data-a="rname" style="flex:0 0 auto">Random</button></div>
+      <div class="btns"><input id="fname" maxlength="18" value="${esc(f.name)}" aria-label="Character name"><button class="alt" data-a="rname" style="flex:0 0 auto">Random</button></div>
       <div class="btns">${['Male','Female'].map(g=>`<button data-a="gender" data-v="${g}" class="${f.gender===g?'':'alt'}">${g}</button>`).join('')}</div>
       <div class="summary"><div style="text-align:center;font-weight:800;color:var(--crim)">CURRENT FATE</div>
       ${CATS.map(([k,n,l])=>{const x=byId(l,f[k]);return `<div>${n}: <b>${x.n}</b> <span class="pill" style="color:${x.r>=6?'#7a5a00':'var(--crim)'}">${RAR[x.r].n}</span></div>`}).join('')}</div>
@@ -85,7 +86,7 @@ function vYou(){
   const P=S.P,e=effAll(),st=raceStage(),stg=race().st.split('|'),nx=RACE_XP[st];
   const sk=magic().sk,un=skillsUnlocked(),w=P.wpn&&byId(GEAR,P.wpn),fo=P.foc&&byId(GEAR,P.foc);
   return `<div class="grid">
-  <div class="card"><h2>${P.name}</h2><div class="d">${P.gender} · Age ${P.age} (${stage()}) · Lifespan about ${P.life}<br>Generation ${P.gen||1} · ${P.back==='heir'?P.backN:byId(BACKS,P.back).n}</div>
+  <div class="card"><h2>${esc(P.name)}</h2><div class="d">${P.gender} · Age ${P.age} (${stage()}) · Lifespan about ${P.life}<br>Generation ${P.gen||1} · ${esc(P.back==='heir'?P.backN:byId(BACKS,P.back).n)}</div>
     <div class="kv"><span>Race</span><b>${rtag(race())}</b></div>
     <div class="kv"><span>Bloodline</span><b>${rtag(bl())}</b></div>
     <div class="kv"><span>Innate magic</span><b>${rtag(magic())}</b></div>
@@ -112,7 +113,7 @@ function vYou(){
     ${sk.map((s,i)=>`<div class="kv"><span>${i<un?'◆':'◇'} <b>${s[0]}</b><br><span class="sm dim">${EFFN[s[3]]||'Damage'}${s[2]?` · power ${s[2]}`:''}</span></span><b class="num sm">${i<un?s[1]+'% mana':'Mastery '+SK_UNLOCK[i]}</b></div>`).join('')}
     <div class="sm dim">Awakenings at mastery 20 and 35, each +40% magic power${P.mlv>=20?' (active)':''}. Gain mastery by casting in combat and through Energy Balance.</div>
   </div>
-  <div class="card parch"><h2>Chronicle</h2><div class="log">${P.log.slice(0,12).map(x=>`<p>${x}</p>`).join('')}</div></div>
+  <div class="card parch"><h2>Chronicle</h2><div class="log">${P.log.slice(0,12).map(x=>`<p>${esc(x)}</p>`).join('')}</div></div>
   <div class="card"><h2>End this life</h2><div class="d">Rebirth carries ${rebirthMerit()} Merit into a new life. Merit buys permanent upgrades and fate rerolls. Everything else resets.</div>
     <button class="alt" data-a="rebirth">Rebirth for ${rebirthMerit()} Merit</button></div>
   </div>`;
@@ -126,7 +127,7 @@ function routineCard(){
   return `<div class="card"><div class="hrow"><h2 id="tE">Activity ${P.energy}/${maxEnergy()}</h2><span class="sm dim">Refills each year</span></div>
   <div class="d">Every action costs activity points. Unspent points are lost when you age up, unless your routine spends them. Playing the mini-games yourself adds up to 20% on top of the routine result.</div>
   <h2 style="font-size:.8rem;margin-top:2px">Yearly routine</h2>
-  <div class="kv" style="align-items:center"><select id="rtT" aria-label="Routine training" style="flex:1">${TRAIN.map(t=>`<option value="${t.id}" ${rt.train===t.id?'selected':''}>${t.n} (${STN[t.st]})</option>`).join('')}</select>${stepper('tN',rt.tN)}</div>
+  <div class="kv" style="align-items:center"><select id="rtT" aria-label="Routine training" style="flex:1"><option value="balanced" ${rt.train==='balanced'?'selected':''}>Balanced (lowest stat first)</option>${TRAIN.map(t=>`<option value="${t.id}" ${rt.train===t.id?'selected':''}>${t.n} (${STN[t.st]})</option>`).join('')}</select>${stepper('tN',rt.tN)}</div>
   <div class="kv" style="align-items:center"><select id="rtJ" aria-label="Routine job" style="flex:1"><option value="best" ${rt.job==='best'?'selected':''}>Best paying job</option>${jobs.map(j=>`<option value="${j.id}" ${rt.job===j.id?'selected':''}>${j.n}</option>`).join('')}</select>${stepper('wN',rt.wN)}</div>
   <div class="kv" style="align-items:center"><span>Recovery <span class="sm dim">(trains instead if unhurt)</span></span>${stepper('rN',rt.rN)}</div>
   <div class="toggle"><span>Keep up relationships<small>Spends leftover social actions on your weakest bonds</small></span><button class="${rt.social?'':'alt'}" data-a="rtsoc">${rt.social?'On':'Off'}</button></div>
@@ -210,7 +211,7 @@ function vLeg(){
   <div class="card"><h2>Merit ${fmt(S.merit)}</h2><div class="d">Permanent upgrades that last across every life.</div>${legacyList()}</div>
   <div class="card"><h2>Codex</h2><div class="d">First time you roll anything earns Merit, more for rarer finds.</div><div class="sm" style="text-align:center">${tot}</div>
     ${CATS.map(([k,n,l])=>`<div class="sm"><b>${n}:</b> ${l.map(x=>S.codex[k][x.id]?`<span style="color:${rc(x.r)}">${x.n}</span>`:'<span class="dim">???</span>').join(', ')}</div>`).join('')}</div>
-  <div class="card"><h2>Past lives</h2>${S.hall.length?S.hall.map(h=>`<div class="kv"><span>Life ${h.life} · ${h.name}<br><span class="sm dim">${h.race}, ${h.mag}</span></span><b class="sm">CC ${h.cc} · ${h.rank}<br>+${h.merit} M</b></div>`).join(''):'<div class="d">This is your first life.</div>'}</div>
+  <div class="card"><h2>Past lives</h2>${S.hall.length?S.hall.map(h=>`<div class="kv"><span>Life ${h.life} · ${esc(h.name)}<br><span class="sm dim">${h.race}, ${h.mag}</span></span><b class="sm">CC ${h.cc} · ${h.rank}<br>+${h.merit} M</b></div>`).join(''):'<div class="d">This is your first life.</div>'}</div>
   </div>`;
 }
 function vWork(){
@@ -230,7 +231,7 @@ function vPeople(){
   const P=S.P,sp=canChild(),gc=giftCost(),noAct=P.acts<=0;
   const btn=(p,a,l,ok)=>`<button class="alt" data-a="ppl" data-v="${p.id}:${a}" ${ok===false||noAct&&a!=='duel'?'disabled':''} style="min-height:36px;padding:6px 8px;font-size:.72rem">${l}</button>`;
   const card=p=>{
-    if(!p.alive)return `<div class="kv"><span>${p.name} <span class="dim sm">· ${relName(p)}</span></span><b class="dim sm">Died at ${p.age}</b></div>`;
+    if(!p.alive)return `<div class="kv"><span>${esc(p.name)} <span class="dim sm">· ${relName(p)}</span></span><b class="dim sm">Died at ${p.age}</b></div>`;
     const b=[btn(p,'time','Spend time'),btn(p,'gift',`Gift ${gc}g`,P.gold>=gc)];
     if(p.kind!=='rival'&&P.age>=AGE_TRAIN)b.push(btn(p,'train',p.kind==='mentor'?'Learn':'Train together'));
     if(p.kind==='rival'&&P.age>=AGE_FIGHT)b.push(`<button data-a="ppl" data-v="${p.id}:duel" data-ce="1" style="min-height:36px;padding:6px 8px;font-size:.72rem">Duel · 1 AP</button>`);
@@ -240,7 +241,7 @@ function vPeople(){
     if(p.kind!=='family'&&p.kind!=='child')b.push(btn(p,'leave',p.kind==='spouse'?'Divorce':p.kind==='partner'?'Break up':'Drift apart'));
     const extra=p.kind==='child'?`<div class="sm">${rtag(byId(RACES,p.race))} · ${rtag(byId(BLOODS,p.bl))} · ${rtag(byId(MAGICS,p.mag))} · ${rtag(byId(TRAITS,p.trait))}</div>`
       :p.kind==='mentor'?`<div class="sm dim">Teaches ${STN[p.st]}</div>`:'';
-    return `<div class="card" style="background:var(--panel2)"><div class="hrow"><b>${p.name}</b><span class="pill" style="color:var(--gold2)">${relName(p)}</span></div>
+    return `<div class="card" style="background:var(--panel2)"><div class="hrow"><b>${esc(p.name)}</b><span class="pill" style="color:var(--gold2)">${relName(p)}</span></div>
       <div class="sm dim">${p.gender} · ${byId(RACES,p.race).n} · Age ${p.age}</div>${extra}
       ${bar(p.kind==='rival'?'':'xp',p.bond,100,p.kind==='rival'?'Respect':'Bond')}<div class="btns" style="flex-wrap:wrap">${b.join('')}</div></div>`;
   };
