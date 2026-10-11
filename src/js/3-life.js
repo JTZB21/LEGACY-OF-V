@@ -10,7 +10,7 @@ function nameFor(g){
 function stage(P){P=P||S.P;if(P.age>=Math.max(50,P.life*.8))return 'Elder';return P.age<AGE_TRAIN?'Infant':P.age<13?'Child':P.age<ADULT?'Teen':'Adult'}
 
 /* ---- event helpers (used by EVENTS) ---- */
-function R(k,n){const v=n*(1+xb('learn')*.5);S.P.raw[k]+=v;return `+${v.toFixed(1)} ${STN[k]}`}
+function R(k,n){const v=n*(1+xb('learn')*.5)*growth();S.P.raw[k]+=v;return `+${v.toFixed(1)} ${STN[k]}`}
 function G(n){S.P.gold=Math.max(0,S.P.gold+Math.round(n*(n>0?goldMult():1)));return n>=0?`+${fmt(n*goldMult())} gold`:`-${fmt(-n)} gold`}
 function X(n){addRxp(n);return `+${Math.round(n*xpMult())} race XP`}
 function MX(n){addMxp(n);return `+${Math.round(n*xpMult())} magic XP`}
@@ -96,35 +96,70 @@ function haveChild(sp){
   return k;
 }
 
+/* ---- yearly routine ---- */
+function defaultRoutine(){return {train:'boulder',tN:6,job:'best',wN:4,rN:2,social:true}}
+function bestJob(){let b=null;JOBS.forEach(j=>{if(jobOpen(j)&&(!b||jobPay(j)>jobPay(b)))b=j});return b}
+function routineJob(){const P=S.P,rt=P.rt;if(rt.job!=='best'){const j=byId(JOBS,rt.job);if(j&&jobOpen(j))return j}return bestJob()}
+function split(ap,w){const tot=w.reduce((a,b)=>a+b,0)||1,raw=w.map(x=>x/tot*ap),out=raw.map(Math.floor);
+  let left=ap-out.reduce((a,b)=>a+b,0);raw.map((x,i)=>[x-out[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){out[i]++;left--}});return out}
+function runRoutine(ap){
+  const P=S.P,rt=P.rt||(P.rt=defaultRoutine());if(ap<=0||P.age<AGE_TRAIN)return '';
+  let [t,w,r]=split(ap,[rt.tN,rt.wN,rt.rN]);
+  const job=P.age>=AGE_WORK?routineJob():null;if(!job){t+=w;w=0}
+  const tr=byId(TRAIN,rt.train)||TRAIN[0];
+  let rests=0;for(let i=0;i<r;i++){if(P.hp<maxHp()*.95||P.mp<maxMp()*.95){restEffect();rests++}else t++}
+  const st0=P.raw[tr.st],g0=P.gold;
+  for(let i=0;i<t;i++){const g=trainGain(tr,0);P.raw[tr.st]+=g.gain/GRADES[4][2];P.mast[tr.id]=Math.min(100,(P.mast[tr.id]||0)+2)}
+  for(let i=0;i<w;i++){P.gold+=jobPay(job);P.raw[job.st]+=.3*learnMult();P.jobs[job.id]=(P.jobs[job.id]||0)+1}
+  let soc=0;
+  if(rt.social){const ppl=P.people.filter(p=>p.alive&&p.kind!=='rival').sort((a,b)=>a.bond-b.bond);
+    while(P.acts>0&&ppl.length){const p=ppl[soc%ppl.length];p.bond=Math.min(100,p.bond+10);P.acts--;soc++;ppl.sort((a,b)=>a.bond-b.bond)}}
+  P.energy=0;
+  const parts=[t?`${t} ${tr.n} (+${(P.raw[tr.st]-st0).toFixed(1)} ${STN[tr.st]})`:'',w?`${w} ${job.n} shifts (+${fmt(P.gold-g0)} gold)`:'',rests?`${rests} rest`:'',soc?`${soc} visits`:''].filter(Boolean);
+  return parts.length?`Routine: ${parts.join(', ')}.`:'';
+}
 /* ---- aging ---- */
-function ageUp(n){
-  const P=S.P;if(!P||P.dead||P.ev!=null||C||MG)return;
-  for(let i=0;i<n;i++){
-    P.age++;P.acts=4;
-    if(P.age<=ADULT)STK.forEach(k=>P.raw[k]+=.8*(1+xb('learn')*.5));
-    else if(stage()==='Elder'){const d=.15/(P.life*.2);['str','spd','vit'].forEach(k=>P.raw[k]*=1-d)}
-    if(P.age===AGE_TRAIN)say(`Age ${P.age}. You are old enough to begin formal training.`);
-    if(P.age===AGE_FIGHT)say(`Age ${P.age}. You may now spar and explore the nearby wilds.`);
-    if(P.age===AGE_WORK)say(`Age ${P.age}. You are old enough to take on work.`);
-    if(P.age===AGE_TRIAL)say(`Age ${P.age}. The Vigil now accepts you for trials, and bosses take notice.`);
-    if(P.age===ADULT)say(`Age ${P.age}. You come of age.`);
-    for(const p of P.people){
-      if(!p.alive)continue;p.age++;
-      if(!['child','spouse','partner'].includes(p.kind))p.bond=Math.max(0,p.bond-2);
-      if(p.kind==='child'&&p.age===ADULT)say(`Age ${P.age}. Your ${relName(p).toLowerCase()} ${p.name} comes of age.`);
-      if(p.age>=p.life&&Math.random()<.35){
-        p.alive=false;say(`Age ${P.age}. Your ${relName(p).toLowerCase()} ${p.name} has died at ${p.age}.`);
-        if(p.rel==='Father'||p.rel==='Mother'){const g=Math.round(50+P.age*3);P.gold+=g;say(`You inherit ${g} gold.`)}
-      }
-    }
-    if(P.age>=5&&Math.random()<.15)say(`Age ${P.age}. ${meet(randomMeetKind())}`);
-    if(P.age>=P.life&&(Math.random()<.3||P.age>=P.life*1.1)){die();break}
-    if(n===1){
-      const pool=EVENTS.map((e,j)=>j).filter(j=>P.age>=EVENTS[j].a[0]&&P.age<=EVENTS[j].a[1]);
-      if(pool.length&&Math.random()<(P.age<=8?.75:.5))P.ev=pick(pool);
-      else if(Math.random()<.4)say(`Age ${P.age}. ${pick(FLAVOUR)}`);
+function yearPass(skipping){
+  const P=S.P;
+  P.age++;P.acts=SOCIAL_ACTS;
+  if(P.age<=ADULT)STK.forEach(k=>P.raw[k]+=.8*(1+xb('learn')*.5));
+  else if(stage()==='Elder'){const d=.15/(P.life*.2);['str','spd','vit'].forEach(k=>P.raw[k]*=1-d)}
+  if(P.age===AGE_TRAIN)say(`Age ${P.age}. You are old enough to begin formal training. You now get activity points each year.`);
+  if(P.age===AGE_FIGHT)say(`Age ${P.age}. You may now spar and explore the nearby wilds.`);
+  if(P.age===AGE_WORK)say(`Age ${P.age}. You are old enough to take on work.`);
+  if(P.age===AGE_TRIAL)say(`Age ${P.age}. The Vigil now accepts you for trials, and bosses take notice.`);
+  if(P.age===ADULT)say(`Age ${P.age}. You come of age.`);
+  const sal=Math.round(RANKS[P.rank].sal*SALARY_YEAR*goldMult());if(sal)P.gold+=sal;
+  for(const p of P.people){
+    if(!p.alive)continue;p.age++;
+    if(!['child','spouse','partner'].includes(p.kind))p.bond=Math.max(0,p.bond-2);
+    if(p.kind==='child'&&p.age===ADULT)say(`Age ${P.age}. Your ${relName(p).toLowerCase()} ${p.name} comes of age.`);
+    if(p.age>=p.life&&Math.random()<.35){
+      p.alive=false;say(`Age ${P.age}. Your ${relName(p).toLowerCase()} ${p.name} has died at ${p.age}.`);P.pause=1;
+      if(p.rel==='Father'||p.rel==='Mother'){const g=Math.round(50+P.age*3);P.gold+=g;say(`You inherit ${g} gold.`)}
     }
   }
+  if(P.age>=5&&Math.random()<.15)say(`Age ${P.age}. ${meet(randomMeetKind())}`);
+  if(P.age>=P.life&&(Math.random()<.3||P.age>=P.life*1.1)){die();return}
+  P.hp=maxHp();P.mp=maxMp();
+  P.energy=P.age>=AGE_TRAIN?maxEnergy():0;
+  const pool=EVENTS.map((e,j)=>j).filter(j=>P.age>=EVENTS[j].a[0]&&P.age<=EVENTS[j].a[1]);
+  const chance=skipping?.2:(P.age<=8?.75:.5);
+  if(pool.length&&Math.random()<chance)P.ev=pick(pool);
+  else if(!skipping&&Math.random()<.4)say(`Age ${P.age}. ${pick(FLAVOUR)}`);
+}
+/* n years. useRoutine spends leftover points first. Skips pause on events, deaths in the family, adulthood and your own death. */
+function ageUp(n,useRoutine){
+  const P=S.P;if(!P||P.dead||P.ev!=null||C||MG)return;
+  const start=P.age;let routineMsg='';P.pause=0;
+  for(let i=0;i<n;i++){
+    if(useRoutine||i>0){const m=runRoutine(P.energy);if(m)routineMsg=m}
+    yearPass(n>1);
+    if(P.dead||P.ev!=null||(n>1&&(P.pause||P.age===ADULT||P.age===AGE_TRAIN)))break;
+  }
+  const yrs=P.age-start;
+  if(routineMsg)say(`Age ${start}${yrs>1?`-${P.age-1}`:''}. ${routineMsg}`);
+  if(n>1&&yrs<n&&!P.dead)toast(`Skip paused at age ${P.age}${P.ev!=null?': something needs your decision.':'.'}`);
   save();
 }
 function resolveEvent(ci){
@@ -153,12 +188,11 @@ function continueAs(cid){
   });
   ppl.unshift(person({kind:'family',rel:old.gender==='Female'?'Mother':'Father',gender:old.gender,name:old.name,race:old.race,age:old.age,life:old.life,bond:kid.bond,alive:false}));
   S.P={name:kid.name,gender:kid.gender,race:kid.race,bl:kid.bl,mag:kid.mag,trait:kid.trait,back:'heir',backN:`Heir of ${old.name}`,raw,
-    mast:{},tier:Object.assign({},old.tier),mxp:0,mlv:1,rxp:0,rank:0,gold:Math.round(old.gold*.5),energy:maxEnergyFor(),ectr:0,drill:old.drill,
+    mast:{},tier:Object.assign({},old.tier),mxp:0,mlv:1,rxp:0,rank:0,gold:Math.round(old.gold*.5),energy:0,rt:Object.assign({},old.rt||defaultRoutine()),
     wpn:old.wpn,foc:old.foc,owned:old.owned.slice(),pot:Object.assign({},old.pot),jobs:{},bosses:{},titles:[],streak:{},wins:0,log:[],hp:-1,mp:-1,
     age:kid.age,life:kid.life||rollLife(kid.race),gen:(old.gen||1)+1,people:ppl,acts:4,dead:false,ev:null};
   S.lives++;C=null;
-  const P=S.P;P.hp=maxHp();P.mp=maxMp();
+  const P=S.P;P.hp=maxHp();P.mp=maxMp();P.energy=P.age>=AGE_TRAIN?maxEnergy():0;
   say(`Generation ${P.gen}. ${P.name} carries on the legacy of ${old.name} at age ${P.age}, inheriting ${fmt(P.gold)} gold, the family gear and training grounds.`);
   toast(`+${m} Merit. ${P.name} continues your line.`);save();
 }
-function maxEnergyFor(){return 10+(S.lp.reserve||0)*2}

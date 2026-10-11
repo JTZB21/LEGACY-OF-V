@@ -53,7 +53,7 @@ function vMG(){
   const m=MG,t=m.t;
   if(m.phase==='done')return `<h2>${t.n}</h2><div class="grade" style="color:${m.grade[4]}">${m.grade[0]}</div>
     <div class="d" style="text-align:center">${m.res}</div>
-    <div class="btns"><button class="alt" data-a="mgclose">Close</button><button data-a="train" data-v="${t.id}" data-ce="1">Again · 1 energy</button></div>`;
+    <div class="btns"><button class="alt" data-a="mgclose">Close</button><button data-a="train" data-v="${t.id}" data-ce="1">Again · 1 AP</button></div>`;
   let g='';
   if(m.type==='timing')g=`<div class="meter"><div class="zone" style="left:30%;width:40%"></div><div class="zone p" style="left:46.5%;width:7%"></div><div class="pip" id="mgPip"></div></div>
     <button class="big" data-a="mg" data-v="tap">${t.id==='meditate'?'Breathe':'Strike'}</button>`;
@@ -111,6 +111,9 @@ function vModal(){
     <div class="grid" style="grid-template-columns:1fr">${BACKS.map(b=>`<div class="card"><div class="t">${b.n}</div><div class="d">${b.d}</div>
     <div class="meta">${Object.entries(b.raw).map(([k,v])=>`${v>0?'+':''}${v} ${STN[k]}`).join(', ')} · ${b.gold} gold</div>
     <button data-a="begin" data-v="${b.id}">Begin as ${b.n}</button></div>`).join('')}</div><button class="alt" data-a="close">Cancel</button>`;
+  if(modal==='yearend'){const P=S.P;return `<h2>End the year?</h2><div class="d">You still have <b style="color:var(--fg)">${P.energy} activity point${P.energy>1?'s':''}</b> this year. They are lost when you age up.</div>
+    <button data-a="yearend" data-v="use">Use them on my routine</button><button class="alt" data-a="yearend" data-v="always">Always use routine (don't ask again)</button>
+    <button class="alt" data-a="yearend" data-v="skip">Age up without them</button><button class="ghost" data-a="close">Cancel</button>`}
   if(modal==='legacy')return `<h2>Merit upgrades</h2><div class="d">You have ${S.merit} Merit.</div>${legacyList()}<button class="alt" data-a="close">Close</button>`;
   if(modal==='reb')return `<h2>End this life?</h2><div class="d">${S.P.name}'s story ends here. You carry ${rebirthMerit()} Merit, your upgrades and your codex into a new life. Stats, gold, gear and rank reset.</div>
     <div class="btns"><button class="alt" data-a="close">Keep living</button><button data-a="dorebirth">Rebirth</button></div>`;
@@ -130,19 +133,24 @@ document.addEventListener('pointerdown',e=>{
   e.preventDefault();mgTap(b.dataset.v);
 });
 document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate)S.fate.name=e.target.value.trim().slice(0,18)});
-document.addEventListener('change',e=>{if(e.target.id==='drill'){S.P.drill=e.target.value;save();render()}if(e.target.id==='romp'){S.romance=e.target.value;save()}});
+document.addEventListener('change',e=>{const id=e.target.id,v=e.target.value;if(id==='rtT'){S.P.rt.train=v;save()}if(id==='rtJ'){S.P.rt.job=v;save()}if(id==='rtM'){S.rtMode=v;save()}if(e.target.id==='romp'){S.romance=e.target.value;save()}});
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
   const a=b.dataset.a,v=b.dataset.v;
-  if(a==='mg'||a==='drill')return;
+  if(a==='mg')return;
   switch(a){
     case 'tab':tab=v;$('view').scrollTop=0;break;
     case 'ctab':ctab=v;break;
     case 'spin':if(spin(v))flashCat=v;break;
     case 'rname':S.fate.name=nameFor(S.fate.gender);break;
     case 'gender':S.fate.gender=v;break;
-    case 'age':ageUp(S.ageX||1);break;
-    case 'agex':S.ageX={1:5,5:10,10:1}[S.ageX||1];toast(`+ Age now advances ${S.ageX} year${S.ageX>1?'s':''}. Multi-year skips grow your stats but skip yearly events.`);break;
+    case 'age':{const P=S.P,n=S.ageX||1;
+      if(P.energy>0&&P.age>=AGE_TRAIN&&(S.rtMode||'ask')==='ask'){modal='yearend';break}
+      ageUp(n,S.rtMode!=='never');break}
+    case 'yearend':modal=null;if(v==='always')S.rtMode='always';ageUp(S.ageX||1,v!=='skip');break;
+    case 'rt':{const [k,d]=v.split(':'),rt=S.P.rt;rt[k]=clamp(rt[k]+(+d),0,15);break}
+    case 'rtsoc':S.P.rt.social=!S.P.rt.social;break;
+    case 'agex':S.ageX={1:5,5:10,10:1}[S.ageX||1];toast(S.ageX>1?`+ Age now skips ${S.ageX} years, running your routine each year. It pauses when something happens.`:'+ Age now advances one year.');break;
     case 'evc':resolveEvent(+v);break;
     case 'heir':continueAs(v);tab='you';break;
     case 'newlife':rebirth();ctab='race';break;
@@ -182,9 +190,10 @@ function boot(){
   if(!load())freshSave();
   const msg=offline();
   render();if(msg)toast(msg);
+  if(S.refund){toast(`Energy upgrades changed. Refunded ${S.refund} Merit for Deep Reserves levels above 3.`);delete S.refund;save()}
   let last=performance.now();
   setInterval(()=>{const n=performance.now(),dt=Math.min(5,(n-last)/1000);last=n;tick(dt);hudLive();
-    const te=$('tE');if(te&&S.P)te.textContent=`Energy ${S.P.energy}/${maxEnergy()}`;const we=$('wE');if(we&&S.P)we.textContent=`${S.P.energy}/${maxEnergy()}`},250);
+    const te=$('tE');if(te&&S.P)te.textContent=`Activity ${S.P.energy}/${maxEnergy()}`;const we=$('wE');if(we&&S.P)we.textContent=`${S.P.energy}/${maxEnergy()}`},250);
   setInterval(save,10000);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
 }

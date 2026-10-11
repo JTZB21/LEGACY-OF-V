@@ -10,3 +10,5 @@
 - The live artifact is published from `dist/artifact.html`.
 - Age gates live in `3-life.js`: training 3, fighting 6, work 10 (rank jobs 16), bosses and trials 12, adulthood 18. Multi-year age-ups skip events on purpose.
 - Glob order matters: files sort by name, so keep the numeric prefixes (e.g. `2-data-life.js` loads before `2-data-progression.js`, `3-core.js` before `3-life.js`).
+- There is no real-time progress: `tick()` and `offline()` are intentionally empty. Each year gives `maxEnergy()` activity points (`P.energy`, reset in `yearPass()` in `3-life.js`), 4 social actions, a full heal and rank salary. Leftover points can be spent by `runRoutine()`.
+- Growth balance: `growth()` in `3-core.js` scales training, work, combat stat gains, events and race/magic XP by `62 / (mid-lifespan - 18)` (Human 1.0). Mini-game grades add 0-20% over the routine result.

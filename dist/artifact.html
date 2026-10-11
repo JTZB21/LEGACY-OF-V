@@ -329,7 +329,9 @@ const TRAIN=[
 const TIERN=['Wood','Stone','Iron','Steel','Mithril','Enchanted'];
 const TIERC=[0,80,400,2000,9000,40000];
 const TIERM=[1,1.6,2.5,3.8,5.6,8];
-const GRADES=[['S',.93,1.5,6,'#ffd85c'],['A',.78,1.2,4,'#57d27a'],['B',.58,1,3,'#4ea6ff'],['C',.38,.7,2,'#d9d4c7'],['D',0,.4,1,'#ff6b5c']];
+/* playing a mini-game adds 0-20% over the routine result */
+const GRADES=[['S',.93,1.2,6,'#ffd85c'],['A',.78,1.15,4,'#57d27a'],['B',.58,1.1,3,'#4ea6ff'],['C',.38,1.05,2,'#d9d4c7'],['D',0,1,1,'#ff6b5c']];
+const AP_BASE=12,SOCIAL_ACTS=4,SALARY_YEAR=300;
 
 const RANKS=[
  {n:'Unsworn',cc:0,sal:0},{n:'Squire',cc:35,sal:.4},{n:'Oathknight',cc:80,sal:1.2},{n:'Banner Captain',cc:150,sal:3},
@@ -385,7 +387,7 @@ const LEGACY=[
  {id:'talent',n:'Inherited Talent',d:'+10% training gains per level',c:15,max:50},
  {id:'coin',n:'Old Coin',d:'+15% gold per level',c:10,max:30},
  {id:'head',n:'Head Start',d:'+4 to every starting stat per level',c:12,max:25},
- {id:'reserve',n:'Deep Reserves',d:'+2 max energy and +10% energy regen per level',c:20,max:15},
+ {id:'reserve',n:'Deep Reserves',d:'+1 activity point every year per level',c:40,max:3},
  {id:'favor',n:'Fate\'s Favor',d:'+2 free spins per category per life',c:15,max:10},
  {id:'memory',n:'Battle Memory',d:'+15% race and magic XP per level',c:15,max:30}
 ];
@@ -393,7 +395,7 @@ const ASSISTS=[
  ['auto','Auto training','Skip mini-games and complete training at Grade A.'],
  ['train2','2x training','Doubles stat gains, mastery and race XP from training.'],
  ['gold2','2x gold','Doubles gold from fights, work and salary.'],
- ['speed','Time skip','Energy, recovery and passive drills run 5x faster.'],
+ ['speed','Extra activity','+6 activity points every year.'],
  ['god','God mode','You take no damage in combat.'],
  ['spins','Unlimited fate spins','Rolling fate costs nothing.']
 ];
@@ -427,7 +429,7 @@ const byId=(list,id)=>list.find(x=>x.id===id);
 const A=()=>S.assist;
 
 function freshSave(){
-  S={v:3,merit:50,lp:{},codex:{race:{},bl:{},mag:{},trait:{}},assist:{},hall:[],lives:0,phase:'create',fate:null,P:null,last:Date.now()};
+  S={v:3,rtMode:'ask',merit:50,lp:{},codex:{race:{},bl:{},mag:{},trait:{}},assist:{},hall:[],lives:0,phase:'create',fate:null,P:null,last:Date.now()};
   newFate();
 }
 /* ---- fate rolling ---- */
@@ -472,12 +474,12 @@ function beginLife(backId){
   const f=S.fate,b=byId(BACKS,backId),head=(S.lp.head||0)*4;
   const raw={};STK.forEach(k=>raw[k]=10+head+(b.raw[k]||0));
   S.P={name:f.name||'Nameless',race:f.race,bl:f.bl,mag:f.mag,trait:f.trait,back:backId,raw,
-    mast:{},tier:{},mxp:0,mlv:1,rxp:0,rank:0,gold:b.gold,energy:10,ectr:0,drill:'str',
+    mast:{},tier:{},mxp:0,mlv:1,rxp:0,rank:0,gold:b.gold,energy:0,
     wpn:b.wpn||null,foc:null,owned:b.wpn?[b.wpn]:[],pot:{hp:2,mp:1},jobs:{},bosses:{},titles:[],streak:{},wins:0,log:[],hp:-1,mp:-1,
     gender:f.gender||'Male',age:0,life:rollLife(f.race),gen:1,acts:4,dead:false,ev:null,people:[]};
   S.P.people=makeFamily(S.P);
   S.lives++;S.phase='play';tab='you';
-  const P=S.P;P.hp=maxHp();P.mp=maxMp();P.energy=maxEnergy();
+  const P=S.P;P.hp=maxHp();P.mp=maxMp();P.energy=0;P.rt=defaultRoutine();
   const fa=P.people.find(p=>p.rel==='Father'),mo=P.people.find(p=>p.rel==='Mother');
   say(`${P.name} is born to ${mo.name} and ${fa.name}: a ${race().n} of the ${bl().n}, carrying ${magic().n} magic. Expected lifespan: about ${P.life} years.`);
   say(`Backstory: ${b.n}. Trait: ${trait().n}.`);
@@ -500,9 +502,12 @@ function mult(k){
 function eff(k){return S.P.raw[k]*mult(k)}
 function effAll(){const o={};STK.forEach(k=>o[k]=eff(k));return o}
 function xb(k){const P=S.P;return [race(),bl(),trait()].reduce((a,s)=>a+(s.m[k]||0),0)}
-function learnMult(){return (1+xb('learn'))*(1+(S.lp.talent||0)*.1)*(A().train2?2:1)}
+/* long-lived races grow slower per year so lifetime potential stays comparable */
+function growthOf(raceId){const r=byId(RACES,raceId);if(r.id==='human')return 1;return Math.min(1,62/((r.life[0]+r.life[1])/2-18))}
+function growth(){return growthOf(S.P.race)}
+function learnMult(){return (1+xb('learn'))*(1+(S.lp.talent||0)*.1)*(A().train2?2:1)*growth()}
 function goldMult(){return (1+xb('gold'))*(1+(S.lp.coin||0)*.15)*(A().gold2?2:1)}
-function xpMult(){return 1+(S.lp.memory||0)*.15}
+function xpMult(){return (1+(S.lp.memory||0)*.15)*growth()}
 const gearB=s=>{const id=s==='w'?S.P.wpn:S.P.foc;const g=id&&byId(GEAR,id);return g?g.b:0};
 function awaken(){const l=S.P.mlv;return 1+(l>=20?.4:0)+(l>=35?.4:0)}
 function maxHp(e){e=e||effAll();return Math.round(80+e.vit*6+e.dur*2)}
@@ -515,9 +520,8 @@ function combatClass(){
   const e=effAll(),base=STK.reduce((a,k)=>a+e[k],0)/4;
   return Math.round(base*(1+gearB('w')*.25+gearB('f')*.25)+S.P.mlv*1.5);
 }
-function maxEnergy(){return 10+(S.lp.reserve||0)*2}
-function energySec(){return 15/((1+(S.lp.reserve||0)*.1)*(A().speed?5:1))}
-function useEnergy(n){if(S.P.energy<n){toast(`Not enough energy. ${n} needed.`);return false}S.P.energy-=n;return true}
+function maxEnergy(){return AP_BASE+Math.min(3,S.lp.reserve||0)+(A().speed?6:0)}
+function useEnergy(n){if(S.P.energy<n){toast(n>S.P.energy&&S.P.energy===0?'No activity points left this year. Press + Age to start a new year.':`Not enough activity points. ${n} needed.`);return false}S.P.energy-=n;return true}
 function mxpNeed(){return Math.round(15*Math.pow(S.P.mlv,1.6))}
 function addMxp(x){const P=S.P;P.mxp+=x*xpMult();while(P.mxp>=mxpNeed()){P.mxp-=mxpNeed();P.mlv++;
   const u=SK_UNLOCK.indexOf(P.mlv);if(u>=0)say(`Magic mastery ${P.mlv}: you learned ${magic().sk[u][0]}.`);
@@ -558,7 +562,8 @@ function workJob(id){
   const after=jobLv(id);if(after>before){say(`Promoted to ${JOBT[after]} ${j.n}. Pay +12%.`);msg+=`. Promoted to ${JOBT[after]}!`}
   toast(msg);
 }
-function rest(){if(!useEnergy(2))return;const P=S.P;P.hp=Math.min(maxHp(),P.hp+maxHp()*.5);P.mp=Math.min(maxMp(),P.mp+maxMp()*.5);toast('You rest. HP and mana restored by 50%.')}
+function restEffect(){const P=S.P;P.hp=Math.min(maxHp(),P.hp+maxHp()*.4);P.mp=Math.min(maxMp(),P.mp+maxMp()*.4)}
+function rest(){if(!useEnergy(1))return;restEffect();toast('You rest. HP and mana restored by 40%.')}
 function healerCost(){return Math.round(10+combatClass()*.6)}
 function healer(){const c=healerCost(),P=S.P;if(P.gold<c)return;P.gold-=c;P.hp=maxHp();P.mp=maxMp();toast('The healer restores you fully.')}
 function drink(k){const P=S.P;if(!P.pot[k])return;P.pot[k]--;if(k==='hp')P.hp=Math.min(maxHp(),P.hp+maxHp()*.45);else P.mp=Math.min(maxMp(),P.mp+maxMp()*.5)}
@@ -577,29 +582,18 @@ function rebirth(){
 }
 
 /* ---- time ---- */
-function tick(dt){
-  if(S.phase!=='play')return;
-  const P=S.P,sp=A().speed?5:1;if(P.dead)return;
-  if(P.energy<maxEnergy()){P.ectr+=dt;const s=energySec();while(P.ectr>=s&&P.energy<maxEnergy()){P.ectr-=s;P.energy++}}else P.ectr=0;
-  if(!C){P.hp=Math.min(maxHp(),P.hp+maxHp()*.002*dt*sp);P.mp=Math.min(maxMp(),P.mp+maxMp()*.004*dt*sp)}
-  const t=TRAIN.find(x=>x.st===P.drill);
-  if(t&&!MG)P.raw[P.drill]+=.03*dt*sp*TIERM[P.tier[t.id]||0]*(1+(P.mast[t.id]||0)/100)*learnMult();
-  P.gold+=RANKS[P.rank].sal*dt*goldMult();
-}
-function drillRate(){const P=S.P,t=TRAIN.find(x=>x.st===P.drill);return .03*60*(A().speed?5:1)*TIERM[P.tier[t.id]||0]*(1+(P.mast[t.id]||0)/100)*learnMult()}
-function offline(){
-  const dt=Math.min(8*3600,(Date.now()-S.last)/1000);
-  if(dt<60||S.phase!=='play')return '';
-  const P=S.P,g0=P.gold,r0=P.raw[P.drill];
-  let left=dt*.5;while(left>0){const s=Math.min(60,left);tick(s);left-=s}
-  return `Away ${Math.round(dt/60)} min: +${fmt(P.gold-g0)} gold, +${(P.raw[P.drill]-r0).toFixed(1)} ${STN[P.drill]}.`;
-}
+/* No real-time progress: everything happens per year (see 3-life.js). */
+function tick(dt){}
+function offline(){return ''}
 function save(){try{S.last=Date.now();localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.v===3){S=o;S.assist=S.assist||{};migrate();return true}}}catch(e){}return false}
 function migrate(){
   if(S.fate&&!S.fate.gender)S.fate.gender='Male';
+  if(S.rtMode==null)S.rtMode='ask';
   const P=S.P;if(!P)return;
   if(P.age==null){P.age=ADULT;P.gender=P.gender||'Male';P.life=rollLife(P.race);P.gen=1;P.acts=4;P.dead=false;P.ev=null;makeFamily(P);P.people.forEach(p=>p.age+=ADULT)}
+  if(P.rt==null){P.rt=defaultRoutine();P.energy=P.age>=AGE_TRAIN?maxEnergy():0;delete P.ectr;delete P.drill}
+  if((S.lp.reserve||0)>3){let r=0;for(let l=4;l<=S.lp.reserve;l++)r+=20*l;S.merit+=r;S.lp.reserve=3;S.refund=r}
 }
 /* ===== LIFE SIM ===== */
 const AGE_TRAIN=3,AGE_FIGHT=6,AGE_WORK=10,AGE_TRIAL=12,ADULT=18;
@@ -613,7 +607,7 @@ function nameFor(g){
 function stage(P){P=P||S.P;if(P.age>=Math.max(50,P.life*.8))return 'Elder';return P.age<AGE_TRAIN?'Infant':P.age<13?'Child':P.age<ADULT?'Teen':'Adult'}
 
 /* ---- event helpers (used by EVENTS) ---- */
-function R(k,n){const v=n*(1+xb('learn')*.5);S.P.raw[k]+=v;return `+${v.toFixed(1)} ${STN[k]}`}
+function R(k,n){const v=n*(1+xb('learn')*.5)*growth();S.P.raw[k]+=v;return `+${v.toFixed(1)} ${STN[k]}`}
 function G(n){S.P.gold=Math.max(0,S.P.gold+Math.round(n*(n>0?goldMult():1)));return n>=0?`+${fmt(n*goldMult())} gold`:`-${fmt(-n)} gold`}
 function X(n){addRxp(n);return `+${Math.round(n*xpMult())} race XP`}
 function MX(n){addMxp(n);return `+${Math.round(n*xpMult())} magic XP`}
@@ -699,35 +693,70 @@ function haveChild(sp){
   return k;
 }
 
+/* ---- yearly routine ---- */
+function defaultRoutine(){return {train:'boulder',tN:6,job:'best',wN:4,rN:2,social:true}}
+function bestJob(){let b=null;JOBS.forEach(j=>{if(jobOpen(j)&&(!b||jobPay(j)>jobPay(b)))b=j});return b}
+function routineJob(){const P=S.P,rt=P.rt;if(rt.job!=='best'){const j=byId(JOBS,rt.job);if(j&&jobOpen(j))return j}return bestJob()}
+function split(ap,w){const tot=w.reduce((a,b)=>a+b,0)||1,raw=w.map(x=>x/tot*ap),out=raw.map(Math.floor);
+  let left=ap-out.reduce((a,b)=>a+b,0);raw.map((x,i)=>[x-out[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){out[i]++;left--}});return out}
+function runRoutine(ap){
+  const P=S.P,rt=P.rt||(P.rt=defaultRoutine());if(ap<=0||P.age<AGE_TRAIN)return '';
+  let [t,w,r]=split(ap,[rt.tN,rt.wN,rt.rN]);
+  const job=P.age>=AGE_WORK?routineJob():null;if(!job){t+=w;w=0}
+  const tr=byId(TRAIN,rt.train)||TRAIN[0];
+  let rests=0;for(let i=0;i<r;i++){if(P.hp<maxHp()*.95||P.mp<maxMp()*.95){restEffect();rests++}else t++}
+  const st0=P.raw[tr.st],g0=P.gold;
+  for(let i=0;i<t;i++){const g=trainGain(tr,0);P.raw[tr.st]+=g.gain/GRADES[4][2];P.mast[tr.id]=Math.min(100,(P.mast[tr.id]||0)+2)}
+  for(let i=0;i<w;i++){P.gold+=jobPay(job);P.raw[job.st]+=.3*learnMult();P.jobs[job.id]=(P.jobs[job.id]||0)+1}
+  let soc=0;
+  if(rt.social){const ppl=P.people.filter(p=>p.alive&&p.kind!=='rival').sort((a,b)=>a.bond-b.bond);
+    while(P.acts>0&&ppl.length){const p=ppl[soc%ppl.length];p.bond=Math.min(100,p.bond+10);P.acts--;soc++;ppl.sort((a,b)=>a.bond-b.bond)}}
+  P.energy=0;
+  const parts=[t?`${t} ${tr.n} (+${(P.raw[tr.st]-st0).toFixed(1)} ${STN[tr.st]})`:'',w?`${w} ${job.n} shifts (+${fmt(P.gold-g0)} gold)`:'',rests?`${rests} rest`:'',soc?`${soc} visits`:''].filter(Boolean);
+  return parts.length?`Routine: ${parts.join(', ')}.`:'';
+}
 /* ---- aging ---- */
-function ageUp(n){
-  const P=S.P;if(!P||P.dead||P.ev!=null||C||MG)return;
-  for(let i=0;i<n;i++){
-    P.age++;P.acts=4;
-    if(P.age<=ADULT)STK.forEach(k=>P.raw[k]+=.8*(1+xb('learn')*.5));
-    else if(stage()==='Elder'){const d=.15/(P.life*.2);['str','spd','vit'].forEach(k=>P.raw[k]*=1-d)}
-    if(P.age===AGE_TRAIN)say(`Age ${P.age}. You are old enough to begin formal training.`);
-    if(P.age===AGE_FIGHT)say(`Age ${P.age}. You may now spar and explore the nearby wilds.`);
-    if(P.age===AGE_WORK)say(`Age ${P.age}. You are old enough to take on work.`);
-    if(P.age===AGE_TRIAL)say(`Age ${P.age}. The Vigil now accepts you for trials, and bosses take notice.`);
-    if(P.age===ADULT)say(`Age ${P.age}. You come of age.`);
-    for(const p of P.people){
-      if(!p.alive)continue;p.age++;
-      if(!['child','spouse','partner'].includes(p.kind))p.bond=Math.max(0,p.bond-2);
-      if(p.kind==='child'&&p.age===ADULT)say(`Age ${P.age}. Your ${relName(p).toLowerCase()} ${p.name} comes of age.`);
-      if(p.age>=p.life&&Math.random()<.35){
-        p.alive=false;say(`Age ${P.age}. Your ${relName(p).toLowerCase()} ${p.name} has died at ${p.age}.`);
-        if(p.rel==='Father'||p.rel==='Mother'){const g=Math.round(50+P.age*3);P.gold+=g;say(`You inherit ${g} gold.`)}
-      }
-    }
-    if(P.age>=5&&Math.random()<.15)say(`Age ${P.age}. ${meet(randomMeetKind())}`);
-    if(P.age>=P.life&&(Math.random()<.3||P.age>=P.life*1.1)){die();break}
-    if(n===1){
-      const pool=EVENTS.map((e,j)=>j).filter(j=>P.age>=EVENTS[j].a[0]&&P.age<=EVENTS[j].a[1]);
-      if(pool.length&&Math.random()<(P.age<=8?.75:.5))P.ev=pick(pool);
-      else if(Math.random()<.4)say(`Age ${P.age}. ${pick(FLAVOUR)}`);
+function yearPass(skipping){
+  const P=S.P;
+  P.age++;P.acts=SOCIAL_ACTS;
+  if(P.age<=ADULT)STK.forEach(k=>P.raw[k]+=.8*(1+xb('learn')*.5));
+  else if(stage()==='Elder'){const d=.15/(P.life*.2);['str','spd','vit'].forEach(k=>P.raw[k]*=1-d)}
+  if(P.age===AGE_TRAIN)say(`Age ${P.age}. You are old enough to begin formal training. You now get activity points each year.`);
+  if(P.age===AGE_FIGHT)say(`Age ${P.age}. You may now spar and explore the nearby wilds.`);
+  if(P.age===AGE_WORK)say(`Age ${P.age}. You are old enough to take on work.`);
+  if(P.age===AGE_TRIAL)say(`Age ${P.age}. The Vigil now accepts you for trials, and bosses take notice.`);
+  if(P.age===ADULT)say(`Age ${P.age}. You come of age.`);
+  const sal=Math.round(RANKS[P.rank].sal*SALARY_YEAR*goldMult());if(sal)P.gold+=sal;
+  for(const p of P.people){
+    if(!p.alive)continue;p.age++;
+    if(!['child','spouse','partner'].includes(p.kind))p.bond=Math.max(0,p.bond-2);
+    if(p.kind==='child'&&p.age===ADULT)say(`Age ${P.age}. Your ${relName(p).toLowerCase()} ${p.name} comes of age.`);
+    if(p.age>=p.life&&Math.random()<.35){
+      p.alive=false;say(`Age ${P.age}. Your ${relName(p).toLowerCase()} ${p.name} has died at ${p.age}.`);P.pause=1;
+      if(p.rel==='Father'||p.rel==='Mother'){const g=Math.round(50+P.age*3);P.gold+=g;say(`You inherit ${g} gold.`)}
     }
   }
+  if(P.age>=5&&Math.random()<.15)say(`Age ${P.age}. ${meet(randomMeetKind())}`);
+  if(P.age>=P.life&&(Math.random()<.3||P.age>=P.life*1.1)){die();return}
+  P.hp=maxHp();P.mp=maxMp();
+  P.energy=P.age>=AGE_TRAIN?maxEnergy():0;
+  const pool=EVENTS.map((e,j)=>j).filter(j=>P.age>=EVENTS[j].a[0]&&P.age<=EVENTS[j].a[1]);
+  const chance=skipping?.2:(P.age<=8?.75:.5);
+  if(pool.length&&Math.random()<chance)P.ev=pick(pool);
+  else if(!skipping&&Math.random()<.4)say(`Age ${P.age}. ${pick(FLAVOUR)}`);
+}
+/* n years. useRoutine spends leftover points first. Skips pause on events, deaths in the family, adulthood and your own death. */
+function ageUp(n,useRoutine){
+  const P=S.P;if(!P||P.dead||P.ev!=null||C||MG)return;
+  const start=P.age;let routineMsg='';P.pause=0;
+  for(let i=0;i<n;i++){
+    if(useRoutine||i>0){const m=runRoutine(P.energy);if(m)routineMsg=m}
+    yearPass(n>1);
+    if(P.dead||P.ev!=null||(n>1&&(P.pause||P.age===ADULT||P.age===AGE_TRAIN)))break;
+  }
+  const yrs=P.age-start;
+  if(routineMsg)say(`Age ${start}${yrs>1?`-${P.age-1}`:''}. ${routineMsg}`);
+  if(n>1&&yrs<n&&!P.dead)toast(`Skip paused at age ${P.age}${P.ev!=null?': something needs your decision.':'.'}`);
   save();
 }
 function resolveEvent(ci){
@@ -756,15 +785,14 @@ function continueAs(cid){
   });
   ppl.unshift(person({kind:'family',rel:old.gender==='Female'?'Mother':'Father',gender:old.gender,name:old.name,race:old.race,age:old.age,life:old.life,bond:kid.bond,alive:false}));
   S.P={name:kid.name,gender:kid.gender,race:kid.race,bl:kid.bl,mag:kid.mag,trait:kid.trait,back:'heir',backN:`Heir of ${old.name}`,raw,
-    mast:{},tier:Object.assign({},old.tier),mxp:0,mlv:1,rxp:0,rank:0,gold:Math.round(old.gold*.5),energy:maxEnergyFor(),ectr:0,drill:old.drill,
+    mast:{},tier:Object.assign({},old.tier),mxp:0,mlv:1,rxp:0,rank:0,gold:Math.round(old.gold*.5),energy:0,rt:Object.assign({},old.rt||defaultRoutine()),
     wpn:old.wpn,foc:old.foc,owned:old.owned.slice(),pot:Object.assign({},old.pot),jobs:{},bosses:{},titles:[],streak:{},wins:0,log:[],hp:-1,mp:-1,
     age:kid.age,life:kid.life||rollLife(kid.race),gen:(old.gen||1)+1,people:ppl,acts:4,dead:false,ev:null};
   S.lives++;C=null;
-  const P=S.P;P.hp=maxHp();P.mp=maxMp();
+  const P=S.P;P.hp=maxHp();P.mp=maxMp();P.energy=P.age>=AGE_TRAIN?maxEnergy():0;
   say(`Generation ${P.gen}. ${P.name} carries on the legacy of ${old.name} at age ${P.age}, inheriting ${fmt(P.gold)} gold, the family gear and training grounds.`);
   toast(`+${m} Merit. ${P.name} continues your line.`);save();
 }
-function maxEnergyFor(){return 10+(S.lp.reserve||0)*2}
 /* ===== COMBAT ===== */
 const skCost=(i,mm)=>Math.round((mm||maxMp())*magic().sk[i][1]/100);
 const dodgeBase=(a,b)=>clamp(.05+.25*(a-b)/(a+b),.02,.3);
@@ -1046,7 +1074,7 @@ function hud(){
   const P=S.P;
   $('hud').innerHTML=`<div class="hrow"><h1>${P.name} <span class="cc num" style="font-size:.9rem">CC <span id="hCC">${combatClass()}</span></span></h1>
   <div class="cur"><span>G <b class="g num" id="hG">${fmt(P.gold)}</b></span><span>M <b class="m num" id="hM">${fmt(S.merit)}</b></span>
-  <span>Energy <b class="e num" id="hE">${P.energy}/${maxEnergy()}</b></span>
+  <span>Activity <b class="e num" id="hE">${P.energy}/${maxEnergy()}</b></span>
   <button class="alt" data-a="modal" data-v="settings" style="min-height:30px;padding:3px 10px;font-size:.72rem">Settings</button></div></div>
   <div class="hrow" style="margin-top:4px"><span class="sm dim">Age <b style="color:var(--fg)">${P.age}</b> · ${stage()} · ${race().n} · ${RANKS[P.rank].n}</span><span class="btns" style="flex:0 0 auto"><button data-a="age" style="min-height:34px;padding:4px 16px;white-space:nowrap">+ Age</button><button class="alt" data-a="agex" style="min-height:34px;padding:4px 9px" aria-label="Years per age up">${S.ageX||1}x</button></span></div>
   <div class="bars" id="hBars">${hudBars()}</div>`;
@@ -1076,7 +1104,7 @@ function vCreate(){
   const f=S.fate,cat=CATS.find(c=>c[0]===ctab),it=byId(cat[2],f[ctab]),c=spinCost(ctab);
   const extra=ctab==='mag'?`<div class="sm" style="text-align:left">${it.sk.map((s,i)=>`<div>• <b>${s[0]}</b> <span class="dim">(mastery ${SK_UNLOCK[i]}) ${EFFN[s[3]]||'Damage'}</span></div>`).join('')}</div>`
     :`<ul>${fmtM(it.m).map(x=>`<li>${x}</li>`).join('')}</ul>`;
-  const stages=ctab==='race'?`<div class="sm dim" style="text-align:left">Stages: ${it.st.split('|').join(' · ')}</div>`:'';
+  const stages=ctab==='race'?`<div class="sm dim" style="text-align:left">Lifespan ${it.life[0]}-${it.life[1]} years · growth rate ×${growthOf(it.id).toFixed(2)} per year<br>Stages: ${it.st.split('|').join(' · ')}</div>`:'';
   return `<div class="col">
   <div class="ctabs">${CATS.map(x=>`<button data-a="ctab" data-v="${x[0]}" class="${ctab===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>
   <div class="fate">
@@ -1122,6 +1150,7 @@ function vYou(){
     <div class="kv"><span>Max HP / Mana / Stamina</span><b class="num">${fmt(maxHp(e))} / ${fmt(maxMp(e))} / ${fmt(maxSt(e))}</b></div>
     <div class="kv"><span>Attack / Magic power</span><b class="num">${fmt(physA(e))} / ${fmt(magA(e))}</b></div>
     <div class="kv"><span>Critical chance</span><b class="num">${Math.round(critC()*100)}%</b></div>
+    <div class="kv"><span>Yearly growth rate</span><b class="num">×${growth().toFixed(2)}</b></div>
   </div>
   <div class="card"><h2>Race progression</h2><div class="d">${race().n} · Stage ${st}/7</div>
     ${nx?bar('xp',P.rxp,nx,'Race XP'):'<div class="d">Fully awakened.</div>'}
@@ -1139,27 +1168,36 @@ function vYou(){
 }
 
 /* ---- training ---- */
+function stepper(k,v){return `<span class="btns" style="flex:0 0 auto;align-items:center;gap:4px"><button class="alt" data-a="rt" data-v="${k}:-1" style="min-height:32px;padding:2px 10px" aria-label="Fewer">−</button><b class="num" style="min-width:1.6em;text-align:center">${v}</b><button class="alt" data-a="rt" data-v="${k}:1" style="min-height:32px;padding:2px 10px" aria-label="More">+</button></span>`}
+function routineCard(){
+  const P=S.P,rt=P.rt,g=growth(),tot=rt.tN+rt.wN+rt.rN;
+  const jobs=JOBS.filter(j=>jobOpen(j));
+  return `<div class="card"><div class="hrow"><h2 id="tE">Activity ${P.energy}/${maxEnergy()}</h2><span class="sm dim">Refills each year</span></div>
+  <div class="d">Every action costs activity points. Unspent points are lost when you age up, unless your routine spends them. Playing the mini-games yourself adds up to 20% on top of the routine result.</div>
+  <h2 style="font-size:.8rem;margin-top:2px">Yearly routine</h2>
+  <div class="kv" style="align-items:center"><select id="rtT" aria-label="Routine training" style="flex:1">${TRAIN.map(t=>`<option value="${t.id}" ${rt.train===t.id?'selected':''}>${t.n} (${STN[t.st]})</option>`).join('')}</select>${stepper('tN',rt.tN)}</div>
+  <div class="kv" style="align-items:center"><select id="rtJ" aria-label="Routine job" style="flex:1"><option value="best" ${rt.job==='best'?'selected':''}>Best paying job</option>${jobs.map(j=>`<option value="${j.id}" ${rt.job===j.id?'selected':''}>${j.n}</option>`).join('')}</select>${stepper('wN',rt.wN)}</div>
+  <div class="kv" style="align-items:center"><span>Recovery <span class="sm dim">(trains instead if unhurt)</span></span>${stepper('rN',rt.rN)}</div>
+  <div class="toggle"><span>Keep up relationships<small>Spends leftover social actions on your weakest bonds</small></span><button class="${rt.social?'':'alt'}" data-a="rtsoc">${rt.social?'On':'Off'}</button></div>
+  <div class="btns" style="align-items:center"><span class="sm" style="flex:0 0 auto">Aging with points left</span><select id="rtM" aria-label="When aging with points left">${[['ask','Ask me'],['always','Always use routine'],['never','Never use routine']].map(([v,l])=>`<option value="${v}" ${S.rtMode===v?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div class="sm dim">The routine splits your remaining points ${rt.tN}:${rt.wN}:${rt.rN}${tot?'':' (set at least one)'}. Locked work turns into training. ${g<1?`As a ${race().n}, your growth rate is ×${g.toFixed(2)} per year to balance your long lifespan.`:''}</div></div>`;
+}
 function lockCard(min,what,why){const P=S.P;return `<div class="card"><div class="t">${what} locked</div><div class="d">${why}</div><div class="meta">Requires age ${min} · you are ${P.age}</div><button data-a="age">+ Age</button></div>`}
 function vTrain(){
   const P=S.P;
   if(P.age<AGE_TRAIN)return lockCard(AGE_TRAIN,'Training','Young children grow through yearly events before formal training begins. Your stats still rise each year as you grow.');
   return `<div class="col">
-  <div class="card"><div class="hrow"><h2 id="tE">Energy ${P.energy}/${maxEnergy()}</h2><span class="sm dim">+1 every ${Math.round(energySec())}s</span></div>
-    <div class="btns" style="align-items:center"><span class="sm" style="flex:0 0 auto">Passive drill</span>
-    <select id="drill" data-a="drill" aria-label="Passive drill">${STK.map(k=>`<option value="${k}" ${P.drill===k?'selected':''}>${STN[k]}</option>`).join('')}</select></div>
-    <div class="sm dim">Your drill trains one stat on its own: +${drillRate().toFixed(1)} ${STN[P.drill]} per minute, and half rate while you are away (up to 8 hours).</div>
-    ${A().auto?'<div class="sm" style="color:var(--gold2)">Auto training is on: sessions complete instantly at Grade A.</div>':''}
-  </div>
+  ${routineCard()}
   <div class="grid">${TRAIN.map(t=>{const tr=P.tier[t.id]||0,m=P.mast[t.id]||0,g=trainGain(t,.85);
     return `<div class="card"><div class="t">${t.n}</div><div class="d">${t.d}</div>
     <div class="meta">${STN[t.st]} · ${TIERN[tr]} gear · Mastery ${m}%</div>
     <div class="sm dim" style="text-align:center">Grade A gives about +${g.gain.toFixed(1)}</div>
-    <div class="btns"><button data-a="train" data-v="${t.id}" data-ce="1">Train · 1 energy</button>
+    <div class="btns"><button data-a="train" data-v="${t.id}" data-ce="1">Train · 1 AP</button>
     ${tr<5?`<button class="alt" data-a="tier" data-v="${t.id}" data-cg="${TIERC[tr+1]}">${TIERN[tr+1]} · ${fmt(TIERC[tr+1])}g</button>`:'<button class="alt" disabled>Max gear</button>'}</div></div>`}).join('')}
   <div class="card"><div class="t">Heritage Rite</div><div class="d">Honour your ${race().n} heritage. A timing rite that grants race XP.</div>
-    <div class="meta">Race XP · Stage ${raceStage()}/7</div><button data-a="train" data-v="rite" data-ce="1">Perform rite · 1 energy</button></div>
+    <div class="meta">Race XP · Stage ${raceStage()}/7</div><button data-a="train" data-v="rite" data-ce="1">Perform rite · 1 AP</button></div>
   <div class="card"><div class="t">Combat Sparring</div><div class="d">A real fight against a trainer near your level. No injuries carry over.</div>
-    <div class="meta">Strength · Speed · Durability · Intelligence</div><button data-a="fight" data-v="spar" data-ce="1">Spar · 1 energy</button></div>
+    <div class="meta">Strength · Speed · Durability · Intelligence</div><button data-a="fight" data-v="spar" data-ce="1">Spar · 1 AP</button></div>
   </div></div>`;
 }
 
@@ -1168,7 +1206,7 @@ function recoveryCard(){
   const P=S.P,hc=healerCost();
   return `<div class="card"><h2>Recovery</h2><div class="d">HP and mana carry over between fights and slowly regenerate.</div>
   ${bar('',P.hp,maxHp(),'HP')}${bar('mp',P.mp,maxMp(),'Mana')}
-  <div class="btns"><button class="alt" data-a="rest" data-ce="2">Rest · 2 energy</button><button class="alt" data-a="healer" data-cg="${hc}">Healer · ${fmt(hc)}g</button></div>
+  <div class="btns"><button class="alt" data-a="rest" data-ce="1">Rest · 1 AP</button><button class="alt" data-a="healer" data-cg="${hc}">Healer · ${fmt(hc)}g</button></div>
   <div class="btns"><button class="alt" data-a="drink" data-v="hp" ${P.pot.hp?'':'disabled'}>Draught (${P.pot.hp||0})</button><button class="alt" data-a="drink" data-v="mp" ${P.pot.mp?'':'disabled'}>Tonic (${P.pot.mp||0})</button></div></div>`;
 }
 function vAdv(){
@@ -1177,7 +1215,7 @@ function vAdv(){
   return `<div class="grid">${recoveryCard()}
   <div class="card"><h2>Vigil rank: ${RANKS[P.rank].n}</h2>
    ${nx?`<div class="d">Next: ${nx.n}. The examiner fights at CC ${nx.cc}. Each rank gives +5% to every stat and ${nx.sal} gold per second salary.</div>
-   <button data-a="fight" data-v="trial" ${cc<nx.cc*.8?'disabled':'data-ce="2"'}>Face the trial · 2 energy</button>${cc<nx.cc*.8?`<div class="sm dim" style="text-align:center">Reach CC ${Math.ceil(nx.cc*.8)} to attempt it.</div>`:''}`
+   <button data-a="fight" data-v="trial" ${cc<nx.cc*.8?'disabled':'data-ce="2"'}>Face the trial · 2 AP</button>${cc<nx.cc*.8?`<div class="sm dim" style="text-align:center">Reach CC ${Math.ceil(nx.cc*.8)} to attempt it.</div>`:''}`
    :'<div class="d">You hold the highest rank of the Vigil.</div>'}
    <div class="sm dim" style="text-align:center">Salary: ${(RANKS[P.rank].sal*goldMult()).toFixed(1)} gold/s</div></div>
   ${REGIONS.map(r=>{const lock=P.rank<r.rank,sk=P.streak[r.id]||0,ec=Math.round(r.cc*(1+.06*sk));
@@ -1185,7 +1223,7 @@ function vAdv(){
     <div class="d">${r.f.map(f=>f[0]).join(', ')}</div>
     <div class="meta"><span style="color:${cc>=ec?'var(--st)':cc>=ec*.75?'var(--gold2)':'var(--hp)'}">Enemy CC ${ec}</span> · Win streak ${sk}</div>
     <div class="sm dim" style="text-align:center">Each win raises the streak, enemy strength and rewards.</div>
-    <button data-a="fight" data-v="region:${r.id}" ${lock?'disabled':'data-ce="1"'}>${lock?`Requires ${RANKS[r.rank].n}`:'Explore · 1 energy'}</button></div>`}).join('')}
+    <button data-a="fight" data-v="region:${r.id}" ${lock?'disabled':'data-ce="1"'}>${lock?`Requires ${RANKS[r.rank].n}`:'Explore · 1 AP'}</button></div>`}).join('')}
   </div>`;
 }
 function vBoss(){
@@ -1194,7 +1232,7 @@ function vBoss(){
   return `<div class="grid">${BOSSES.map((b,i)=>{const lock=P.rank<bossRank(b),done=P.bosses[b.id];
     return `<div class="card ${lock?'lock':''}"><div class="t">${b.n}</div><div class="d">${b.d}</div>
     <div class="meta"><span style="color:${cc>=b.cc*1.2?'var(--st)':cc>=b.cc*.9?'var(--gold2)':'var(--hp)'}">Boss CC ${b.cc}</span> · ${done?`Defeated · ${b.title}`:`First kill: ${bossMerit(b)} Merit, title ${b.title}`}</div>
-    <button data-a="fight" data-v="boss:${b.id}" ${lock?'disabled':'data-ce="2"'}>${lock?`Requires ${RANKS[bossRank(b)].n}`:'Challenge · 2 energy'}</button></div>`}).join('')}
+    <button data-a="fight" data-v="boss:${b.id}" ${lock?'disabled':'data-ce="2"'}>${lock?`Requires ${RANKS[bossRank(b)].n}`:'Challenge · 2 AP'}</button></div>`}).join('')}
   <div class="card"><h2>Boss tips</h2><div class="d">Bosses telegraph their next move. Block heavy blows and anything marked UNLEASH. Below half HP they enter a frenzy. Bosses resist stuns half the time. Aim for about 20% more CC than the boss.</div></div></div>`;
 }
 function vArm(){
@@ -1227,8 +1265,8 @@ function vLeg(){
 function vWork(){
   const P=S.P,jobs=P.jobs||{};
   if(P.age<AGE_WORK)return lockCard(AGE_WORK,'Work','Nobody will hire a child yet.');
-  return `<div class="col"><div class="card"><h2>Work</h2><div class="d">Each shift costs 1 energy, pays gold based on one stat and trains it a little. Promotions come at ${JOBLV.slice(1).join(', ')} shifts, each +12% pay. Rank raises all pay by 10% per rank.</div>
-  <div class="sm" style="text-align:center">Energy <b class="num" id="wE">${P.energy}/${maxEnergy()}</b> · Gold <b class="num">${fmt(P.gold)}</b></div></div>
+  return `<div class="col"><div class="card"><h2>Work</h2><div class="d">Each shift costs 1 activity point, pays gold based on one stat and trains it a little. Promotions come at ${JOBLV.slice(1).join(', ')} shifts, each +12% pay. Rank raises all pay by 10% per rank.</div>
+  <div class="sm" style="text-align:center">Activity <b class="num" id="wE">${P.energy}/${maxEnergy()}</b> · Gold <b class="num">${fmt(P.gold)}</b></div></div>
   <div class="grid">${JOBS.map(j=>{const open=jobOpen(j),lv=jobLv(j.id),n=jobs[j.id]||0,nx=JOBLV[lv+1];
     const need=[P.age<jobAge(j)?`age ${jobAge(j)}`:'',j.rank>P.rank?RANKS[j.rank].n:'',eff(j.st)<j.req?`${j.req} ${STN[j.st]} (you have ${fmt(eff(j.st))})`:''].filter(Boolean).join(' and ');
     return `<div class="card ${open?'':'lock'}"><div class="t">${j.n}</div><div class="d">${j.d}</div>
@@ -1244,7 +1282,7 @@ function vPeople(){
     if(!p.alive)return `<div class="kv"><span>${p.name} <span class="dim sm">· ${relName(p)}</span></span><b class="dim sm">Died at ${p.age}</b></div>`;
     const b=[btn(p,'time','Spend time'),btn(p,'gift',`Gift ${gc}g`,P.gold>=gc)];
     if(p.kind!=='rival'&&P.age>=AGE_TRAIN)b.push(btn(p,'train',p.kind==='mentor'?'Learn':'Train together'));
-    if(p.kind==='rival'&&P.age>=AGE_FIGHT)b.push(`<button data-a="ppl" data-v="${p.id}:duel" data-ce="1" style="min-height:36px;padding:6px 8px;font-size:.72rem">Duel · 1 energy</button>`);
+    if(p.kind==='rival'&&P.age>=AGE_FIGHT)b.push(`<button data-a="ppl" data-v="${p.id}:duel" data-ce="1" style="min-height:36px;padding:6px 8px;font-size:.72rem">Duel · 1 AP</button>`);
     if(p.kind==='romance'&&P.age>=14)b.push(btn(p,'date','Ask out',p.bond>=40));
     if(p.kind==='partner')b.push(btn(p,'propose','Propose',P.age>=ADULT&&p.bond>=70));
     if(p.kind==='spouse'&&sp)b.push(btn(p,'child','Try for a child'));
@@ -1320,7 +1358,7 @@ function vMG(){
   const m=MG,t=m.t;
   if(m.phase==='done')return `<h2>${t.n}</h2><div class="grade" style="color:${m.grade[4]}">${m.grade[0]}</div>
     <div class="d" style="text-align:center">${m.res}</div>
-    <div class="btns"><button class="alt" data-a="mgclose">Close</button><button data-a="train" data-v="${t.id}" data-ce="1">Again · 1 energy</button></div>`;
+    <div class="btns"><button class="alt" data-a="mgclose">Close</button><button data-a="train" data-v="${t.id}" data-ce="1">Again · 1 AP</button></div>`;
   let g='';
   if(m.type==='timing')g=`<div class="meter"><div class="zone" style="left:30%;width:40%"></div><div class="zone p" style="left:46.5%;width:7%"></div><div class="pip" id="mgPip"></div></div>
     <button class="big" data-a="mg" data-v="tap">${t.id==='meditate'?'Breathe':'Strike'}</button>`;
@@ -1378,6 +1416,9 @@ function vModal(){
     <div class="grid" style="grid-template-columns:1fr">${BACKS.map(b=>`<div class="card"><div class="t">${b.n}</div><div class="d">${b.d}</div>
     <div class="meta">${Object.entries(b.raw).map(([k,v])=>`${v>0?'+':''}${v} ${STN[k]}`).join(', ')} · ${b.gold} gold</div>
     <button data-a="begin" data-v="${b.id}">Begin as ${b.n}</button></div>`).join('')}</div><button class="alt" data-a="close">Cancel</button>`;
+  if(modal==='yearend'){const P=S.P;return `<h2>End the year?</h2><div class="d">You still have <b style="color:var(--fg)">${P.energy} activity point${P.energy>1?'s':''}</b> this year. They are lost when you age up.</div>
+    <button data-a="yearend" data-v="use">Use them on my routine</button><button class="alt" data-a="yearend" data-v="always">Always use routine (don't ask again)</button>
+    <button class="alt" data-a="yearend" data-v="skip">Age up without them</button><button class="ghost" data-a="close">Cancel</button>`}
   if(modal==='legacy')return `<h2>Merit upgrades</h2><div class="d">You have ${S.merit} Merit.</div>${legacyList()}<button class="alt" data-a="close">Close</button>`;
   if(modal==='reb')return `<h2>End this life?</h2><div class="d">${S.P.name}'s story ends here. You carry ${rebirthMerit()} Merit, your upgrades and your codex into a new life. Stats, gold, gear and rank reset.</div>
     <div class="btns"><button class="alt" data-a="close">Keep living</button><button data-a="dorebirth">Rebirth</button></div>`;
@@ -1397,19 +1438,24 @@ document.addEventListener('pointerdown',e=>{
   e.preventDefault();mgTap(b.dataset.v);
 });
 document.addEventListener('input',e=>{if(e.target.id==='fname'&&S.fate)S.fate.name=e.target.value.trim().slice(0,18)});
-document.addEventListener('change',e=>{if(e.target.id==='drill'){S.P.drill=e.target.value;save();render()}if(e.target.id==='romp'){S.romance=e.target.value;save()}});
+document.addEventListener('change',e=>{const id=e.target.id,v=e.target.value;if(id==='rtT'){S.P.rt.train=v;save()}if(id==='rtJ'){S.P.rt.job=v;save()}if(id==='rtM'){S.rtMode=v;save()}if(e.target.id==='romp'){S.romance=e.target.value;save()}});
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
   const a=b.dataset.a,v=b.dataset.v;
-  if(a==='mg'||a==='drill')return;
+  if(a==='mg')return;
   switch(a){
     case 'tab':tab=v;$('view').scrollTop=0;break;
     case 'ctab':ctab=v;break;
     case 'spin':if(spin(v))flashCat=v;break;
     case 'rname':S.fate.name=nameFor(S.fate.gender);break;
     case 'gender':S.fate.gender=v;break;
-    case 'age':ageUp(S.ageX||1);break;
-    case 'agex':S.ageX={1:5,5:10,10:1}[S.ageX||1];toast(`+ Age now advances ${S.ageX} year${S.ageX>1?'s':''}. Multi-year skips grow your stats but skip yearly events.`);break;
+    case 'age':{const P=S.P,n=S.ageX||1;
+      if(P.energy>0&&P.age>=AGE_TRAIN&&(S.rtMode||'ask')==='ask'){modal='yearend';break}
+      ageUp(n,S.rtMode!=='never');break}
+    case 'yearend':modal=null;if(v==='always')S.rtMode='always';ageUp(S.ageX||1,v!=='skip');break;
+    case 'rt':{const [k,d]=v.split(':'),rt=S.P.rt;rt[k]=clamp(rt[k]+(+d),0,15);break}
+    case 'rtsoc':S.P.rt.social=!S.P.rt.social;break;
+    case 'agex':S.ageX={1:5,5:10,10:1}[S.ageX||1];toast(S.ageX>1?`+ Age now skips ${S.ageX} years, running your routine each year. It pauses when something happens.`:'+ Age now advances one year.');break;
     case 'evc':resolveEvent(+v);break;
     case 'heir':continueAs(v);tab='you';break;
     case 'newlife':rebirth();ctab='race';break;
@@ -1449,9 +1495,10 @@ function boot(){
   if(!load())freshSave();
   const msg=offline();
   render();if(msg)toast(msg);
+  if(S.refund){toast(`Energy upgrades changed. Refunded ${S.refund} Merit for Deep Reserves levels above 3.`);delete S.refund;save()}
   let last=performance.now();
   setInterval(()=>{const n=performance.now(),dt=Math.min(5,(n-last)/1000);last=n;tick(dt);hudLive();
-    const te=$('tE');if(te&&S.P)te.textContent=`Energy ${S.P.energy}/${maxEnergy()}`;const we=$('wE');if(we&&S.P)we.textContent=`${S.P.energy}/${maxEnergy()}`},250);
+    const te=$('tE');if(te&&S.P)te.textContent=`Activity ${S.P.energy}/${maxEnergy()}`;const we=$('wE');if(we&&S.P)we.textContent=`${S.P.energy}/${maxEnergy()}`},250);
   setInterval(save,10000);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
 }

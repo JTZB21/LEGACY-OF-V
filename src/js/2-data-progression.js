@@ -12,7 +12,9 @@ const TRAIN=[
 const TIERN=['Wood','Stone','Iron','Steel','Mithril','Enchanted'];
 const TIERC=[0,80,400,2000,9000,40000];
 const TIERM=[1,1.6,2.5,3.8,5.6,8];
-const GRADES=[['S',.93,1.5,6,'#ffd85c'],['A',.78,1.2,4,'#57d27a'],['B',.58,1,3,'#4ea6ff'],['C',.38,.7,2,'#d9d4c7'],['D',0,.4,1,'#ff6b5c']];
+/* playing a mini-game adds 0-20% over the routine result */
+const GRADES=[['S',.93,1.2,6,'#ffd85c'],['A',.78,1.15,4,'#57d27a'],['B',.58,1.1,3,'#4ea6ff'],['C',.38,1.05,2,'#d9d4c7'],['D',0,1,1,'#ff6b5c']];
+const AP_BASE=12,SOCIAL_ACTS=4,SALARY_YEAR=300;
 
 const RANKS=[
  {n:'Unsworn',cc:0,sal:0},{n:'Squire',cc:35,sal:.4},{n:'Oathknight',cc:80,sal:1.2},{n:'Banner Captain',cc:150,sal:3},
@@ -68,7 +70,7 @@ const LEGACY=[
  {id:'talent',n:'Inherited Talent',d:'+10% training gains per level',c:15,max:50},
  {id:'coin',n:'Old Coin',d:'+15% gold per level',c:10,max:30},
  {id:'head',n:'Head Start',d:'+4 to every starting stat per level',c:12,max:25},
- {id:'reserve',n:'Deep Reserves',d:'+2 max energy and +10% energy regen per level',c:20,max:15},
+ {id:'reserve',n:'Deep Reserves',d:'+1 activity point every year per level',c:40,max:3},
  {id:'favor',n:'Fate\'s Favor',d:'+2 free spins per category per life',c:15,max:10},
  {id:'memory',n:'Battle Memory',d:'+15% race and magic XP per level',c:15,max:30}
 ];
@@ -76,7 +78,7 @@ const ASSISTS=[
  ['auto','Auto training','Skip mini-games and complete training at Grade A.'],
  ['train2','2x training','Doubles stat gains, mastery and race XP from training.'],
  ['gold2','2x gold','Doubles gold from fights, work and salary.'],
- ['speed','Time skip','Energy, recovery and passive drills run 5x faster.'],
+ ['speed','Extra activity','+6 activity points every year.'],
  ['god','God mode','You take no damage in combat.'],
  ['spins','Unlimited fate spins','Rolling fate costs nothing.']
 ];

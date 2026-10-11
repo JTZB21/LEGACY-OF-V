@@ -25,7 +25,7 @@ function hud(){
   const P=S.P;
   $('hud').innerHTML=`<div class="hrow"><h1>${P.name} <span class="cc num" style="font-size:.9rem">CC <span id="hCC">${combatClass()}</span></span></h1>
   <div class="cur"><span>G <b class="g num" id="hG">${fmt(P.gold)}</b></span><span>M <b class="m num" id="hM">${fmt(S.merit)}</b></span>
-  <span>Energy <b class="e num" id="hE">${P.energy}/${maxEnergy()}</b></span>
+  <span>Activity <b class="e num" id="hE">${P.energy}/${maxEnergy()}</b></span>
   <button class="alt" data-a="modal" data-v="settings" style="min-height:30px;padding:3px 10px;font-size:.72rem">Settings</button></div></div>
   <div class="hrow" style="margin-top:4px"><span class="sm dim">Age <b style="color:var(--fg)">${P.age}</b> · ${stage()} · ${race().n} · ${RANKS[P.rank].n}</span><span class="btns" style="flex:0 0 auto"><button data-a="age" style="min-height:34px;padding:4px 16px;white-space:nowrap">+ Age</button><button class="alt" data-a="agex" style="min-height:34px;padding:4px 9px" aria-label="Years per age up">${S.ageX||1}x</button></span></div>
   <div class="bars" id="hBars">${hudBars()}</div>`;
@@ -55,7 +55,7 @@ function vCreate(){
   const f=S.fate,cat=CATS.find(c=>c[0]===ctab),it=byId(cat[2],f[ctab]),c=spinCost(ctab);
   const extra=ctab==='mag'?`<div class="sm" style="text-align:left">${it.sk.map((s,i)=>`<div>• <b>${s[0]}</b> <span class="dim">(mastery ${SK_UNLOCK[i]}) ${EFFN[s[3]]||'Damage'}</span></div>`).join('')}</div>`
     :`<ul>${fmtM(it.m).map(x=>`<li>${x}</li>`).join('')}</ul>`;
-  const stages=ctab==='race'?`<div class="sm dim" style="text-align:left">Stages: ${it.st.split('|').join(' · ')}</div>`:'';
+  const stages=ctab==='race'?`<div class="sm dim" style="text-align:left">Lifespan ${it.life[0]}-${it.life[1]} years · growth rate ×${growthOf(it.id).toFixed(2)} per year<br>Stages: ${it.st.split('|').join(' · ')}</div>`:'';
   return `<div class="col">
   <div class="ctabs">${CATS.map(x=>`<button data-a="ctab" data-v="${x[0]}" class="${ctab===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>
   <div class="fate">
@@ -101,6 +101,7 @@ function vYou(){
     <div class="kv"><span>Max HP / Mana / Stamina</span><b class="num">${fmt(maxHp(e))} / ${fmt(maxMp(e))} / ${fmt(maxSt(e))}</b></div>
     <div class="kv"><span>Attack / Magic power</span><b class="num">${fmt(physA(e))} / ${fmt(magA(e))}</b></div>
     <div class="kv"><span>Critical chance</span><b class="num">${Math.round(critC()*100)}%</b></div>
+    <div class="kv"><span>Yearly growth rate</span><b class="num">×${growth().toFixed(2)}</b></div>
   </div>
   <div class="card"><h2>Race progression</h2><div class="d">${race().n} · Stage ${st}/7</div>
     ${nx?bar('xp',P.rxp,nx,'Race XP'):'<div class="d">Fully awakened.</div>'}
@@ -118,27 +119,36 @@ function vYou(){
 }
 
 /* ---- training ---- */
+function stepper(k,v){return `<span class="btns" style="flex:0 0 auto;align-items:center;gap:4px"><button class="alt" data-a="rt" data-v="${k}:-1" style="min-height:32px;padding:2px 10px" aria-label="Fewer">−</button><b class="num" style="min-width:1.6em;text-align:center">${v}</b><button class="alt" data-a="rt" data-v="${k}:1" style="min-height:32px;padding:2px 10px" aria-label="More">+</button></span>`}
+function routineCard(){
+  const P=S.P,rt=P.rt,g=growth(),tot=rt.tN+rt.wN+rt.rN;
+  const jobs=JOBS.filter(j=>jobOpen(j));
+  return `<div class="card"><div class="hrow"><h2 id="tE">Activity ${P.energy}/${maxEnergy()}</h2><span class="sm dim">Refills each year</span></div>
+  <div class="d">Every action costs activity points. Unspent points are lost when you age up, unless your routine spends them. Playing the mini-games yourself adds up to 20% on top of the routine result.</div>
+  <h2 style="font-size:.8rem;margin-top:2px">Yearly routine</h2>
+  <div class="kv" style="align-items:center"><select id="rtT" aria-label="Routine training" style="flex:1">${TRAIN.map(t=>`<option value="${t.id}" ${rt.train===t.id?'selected':''}>${t.n} (${STN[t.st]})</option>`).join('')}</select>${stepper('tN',rt.tN)}</div>
+  <div class="kv" style="align-items:center"><select id="rtJ" aria-label="Routine job" style="flex:1"><option value="best" ${rt.job==='best'?'selected':''}>Best paying job</option>${jobs.map(j=>`<option value="${j.id}" ${rt.job===j.id?'selected':''}>${j.n}</option>`).join('')}</select>${stepper('wN',rt.wN)}</div>
+  <div class="kv" style="align-items:center"><span>Recovery <span class="sm dim">(trains instead if unhurt)</span></span>${stepper('rN',rt.rN)}</div>
+  <div class="toggle"><span>Keep up relationships<small>Spends leftover social actions on your weakest bonds</small></span><button class="${rt.social?'':'alt'}" data-a="rtsoc">${rt.social?'On':'Off'}</button></div>
+  <div class="btns" style="align-items:center"><span class="sm" style="flex:0 0 auto">Aging with points left</span><select id="rtM" aria-label="When aging with points left">${[['ask','Ask me'],['always','Always use routine'],['never','Never use routine']].map(([v,l])=>`<option value="${v}" ${S.rtMode===v?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div class="sm dim">The routine splits your remaining points ${rt.tN}:${rt.wN}:${rt.rN}${tot?'':' (set at least one)'}. Locked work turns into training. ${g<1?`As a ${race().n}, your growth rate is ×${g.toFixed(2)} per year to balance your long lifespan.`:''}</div></div>`;
+}
 function lockCard(min,what,why){const P=S.P;return `<div class="card"><div class="t">${what} locked</div><div class="d">${why}</div><div class="meta">Requires age ${min} · you are ${P.age}</div><button data-a="age">+ Age</button></div>`}
 function vTrain(){
   const P=S.P;
   if(P.age<AGE_TRAIN)return lockCard(AGE_TRAIN,'Training','Young children grow through yearly events before formal training begins. Your stats still rise each year as you grow.');
   return `<div class="col">
-  <div class="card"><div class="hrow"><h2 id="tE">Energy ${P.energy}/${maxEnergy()}</h2><span class="sm dim">+1 every ${Math.round(energySec())}s</span></div>
-    <div class="btns" style="align-items:center"><span class="sm" style="flex:0 0 auto">Passive drill</span>
-    <select id="drill" data-a="drill" aria-label="Passive drill">${STK.map(k=>`<option value="${k}" ${P.drill===k?'selected':''}>${STN[k]}</option>`).join('')}</select></div>
-    <div class="sm dim">Your drill trains one stat on its own: +${drillRate().toFixed(1)} ${STN[P.drill]} per minute, and half rate while you are away (up to 8 hours).</div>
-    ${A().auto?'<div class="sm" style="color:var(--gold2)">Auto training is on: sessions complete instantly at Grade A.</div>':''}
-  </div>
+  ${routineCard()}
   <div class="grid">${TRAIN.map(t=>{const tr=P.tier[t.id]||0,m=P.mast[t.id]||0,g=trainGain(t,.85);
     return `<div class="card"><div class="t">${t.n}</div><div class="d">${t.d}</div>
     <div class="meta">${STN[t.st]} · ${TIERN[tr]} gear · Mastery ${m}%</div>
     <div class="sm dim" style="text-align:center">Grade A gives about +${g.gain.toFixed(1)}</div>
-    <div class="btns"><button data-a="train" data-v="${t.id}" data-ce="1">Train · 1 energy</button>
+    <div class="btns"><button data-a="train" data-v="${t.id}" data-ce="1">Train · 1 AP</button>
     ${tr<5?`<button class="alt" data-a="tier" data-v="${t.id}" data-cg="${TIERC[tr+1]}">${TIERN[tr+1]} · ${fmt(TIERC[tr+1])}g</button>`:'<button class="alt" disabled>Max gear</button>'}</div></div>`}).join('')}
   <div class="card"><div class="t">Heritage Rite</div><div class="d">Honour your ${race().n} heritage. A timing rite that grants race XP.</div>
-    <div class="meta">Race XP · Stage ${raceStage()}/7</div><button data-a="train" data-v="rite" data-ce="1">Perform rite · 1 energy</button></div>
+    <div class="meta">Race XP · Stage ${raceStage()}/7</div><button data-a="train" data-v="rite" data-ce="1">Perform rite · 1 AP</button></div>
   <div class="card"><div class="t">Combat Sparring</div><div class="d">A real fight against a trainer near your level. No injuries carry over.</div>
-    <div class="meta">Strength · Speed · Durability · Intelligence</div><button data-a="fight" data-v="spar" data-ce="1">Spar · 1 energy</button></div>
+    <div class="meta">Strength · Speed · Durability · Intelligence</div><button data-a="fight" data-v="spar" data-ce="1">Spar · 1 AP</button></div>
   </div></div>`;
 }
 
@@ -147,7 +157,7 @@ function recoveryCard(){
   const P=S.P,hc=healerCost();
   return `<div class="card"><h2>Recovery</h2><div class="d">HP and mana carry over between fights and slowly regenerate.</div>
   ${bar('',P.hp,maxHp(),'HP')}${bar('mp',P.mp,maxMp(),'Mana')}
-  <div class="btns"><button class="alt" data-a="rest" data-ce="2">Rest · 2 energy</button><button class="alt" data-a="healer" data-cg="${hc}">Healer · ${fmt(hc)}g</button></div>
+  <div class="btns"><button class="alt" data-a="rest" data-ce="1">Rest · 1 AP</button><button class="alt" data-a="healer" data-cg="${hc}">Healer · ${fmt(hc)}g</button></div>
   <div class="btns"><button class="alt" data-a="drink" data-v="hp" ${P.pot.hp?'':'disabled'}>Draught (${P.pot.hp||0})</button><button class="alt" data-a="drink" data-v="mp" ${P.pot.mp?'':'disabled'}>Tonic (${P.pot.mp||0})</button></div></div>`;
 }
 function vAdv(){
@@ -156,7 +166,7 @@ function vAdv(){
   return `<div class="grid">${recoveryCard()}
   <div class="card"><h2>Vigil rank: ${RANKS[P.rank].n}</h2>
    ${nx?`<div class="d">Next: ${nx.n}. The examiner fights at CC ${nx.cc}. Each rank gives +5% to every stat and ${nx.sal} gold per second salary.</div>
-   <button data-a="fight" data-v="trial" ${cc<nx.cc*.8?'disabled':'data-ce="2"'}>Face the trial · 2 energy</button>${cc<nx.cc*.8?`<div class="sm dim" style="text-align:center">Reach CC ${Math.ceil(nx.cc*.8)} to attempt it.</div>`:''}`
+   <button data-a="fight" data-v="trial" ${cc<nx.cc*.8?'disabled':'data-ce="2"'}>Face the trial · 2 AP</button>${cc<nx.cc*.8?`<div class="sm dim" style="text-align:center">Reach CC ${Math.ceil(nx.cc*.8)} to attempt it.</div>`:''}`
    :'<div class="d">You hold the highest rank of the Vigil.</div>'}
    <div class="sm dim" style="text-align:center">Salary: ${(RANKS[P.rank].sal*goldMult()).toFixed(1)} gold/s</div></div>
   ${REGIONS.map(r=>{const lock=P.rank<r.rank,sk=P.streak[r.id]||0,ec=Math.round(r.cc*(1+.06*sk));
@@ -164,7 +174,7 @@ function vAdv(){
     <div class="d">${r.f.map(f=>f[0]).join(', ')}</div>
     <div class="meta"><span style="color:${cc>=ec?'var(--st)':cc>=ec*.75?'var(--gold2)':'var(--hp)'}">Enemy CC ${ec}</span> · Win streak ${sk}</div>
     <div class="sm dim" style="text-align:center">Each win raises the streak, enemy strength and rewards.</div>
-    <button data-a="fight" data-v="region:${r.id}" ${lock?'disabled':'data-ce="1"'}>${lock?`Requires ${RANKS[r.rank].n}`:'Explore · 1 energy'}</button></div>`}).join('')}
+    <button data-a="fight" data-v="region:${r.id}" ${lock?'disabled':'data-ce="1"'}>${lock?`Requires ${RANKS[r.rank].n}`:'Explore · 1 AP'}</button></div>`}).join('')}
   </div>`;
 }
 function vBoss(){
@@ -173,7 +183,7 @@ function vBoss(){
   return `<div class="grid">${BOSSES.map((b,i)=>{const lock=P.rank<bossRank(b),done=P.bosses[b.id];
     return `<div class="card ${lock?'lock':''}"><div class="t">${b.n}</div><div class="d">${b.d}</div>
     <div class="meta"><span style="color:${cc>=b.cc*1.2?'var(--st)':cc>=b.cc*.9?'var(--gold2)':'var(--hp)'}">Boss CC ${b.cc}</span> · ${done?`Defeated · ${b.title}`:`First kill: ${bossMerit(b)} Merit, title ${b.title}`}</div>
-    <button data-a="fight" data-v="boss:${b.id}" ${lock?'disabled':'data-ce="2"'}>${lock?`Requires ${RANKS[bossRank(b)].n}`:'Challenge · 2 energy'}</button></div>`}).join('')}
+    <button data-a="fight" data-v="boss:${b.id}" ${lock?'disabled':'data-ce="2"'}>${lock?`Requires ${RANKS[bossRank(b)].n}`:'Challenge · 2 AP'}</button></div>`}).join('')}
   <div class="card"><h2>Boss tips</h2><div class="d">Bosses telegraph their next move. Block heavy blows and anything marked UNLEASH. Below half HP they enter a frenzy. Bosses resist stuns half the time. Aim for about 20% more CC than the boss.</div></div></div>`;
 }
 function vArm(){
@@ -206,8 +216,8 @@ function vLeg(){
 function vWork(){
   const P=S.P,jobs=P.jobs||{};
   if(P.age<AGE_WORK)return lockCard(AGE_WORK,'Work','Nobody will hire a child yet.');
-  return `<div class="col"><div class="card"><h2>Work</h2><div class="d">Each shift costs 1 energy, pays gold based on one stat and trains it a little. Promotions come at ${JOBLV.slice(1).join(', ')} shifts, each +12% pay. Rank raises all pay by 10% per rank.</div>
-  <div class="sm" style="text-align:center">Energy <b class="num" id="wE">${P.energy}/${maxEnergy()}</b> · Gold <b class="num">${fmt(P.gold)}</b></div></div>
+  return `<div class="col"><div class="card"><h2>Work</h2><div class="d">Each shift costs 1 activity point, pays gold based on one stat and trains it a little. Promotions come at ${JOBLV.slice(1).join(', ')} shifts, each +12% pay. Rank raises all pay by 10% per rank.</div>
+  <div class="sm" style="text-align:center">Activity <b class="num" id="wE">${P.energy}/${maxEnergy()}</b> · Gold <b class="num">${fmt(P.gold)}</b></div></div>
   <div class="grid">${JOBS.map(j=>{const open=jobOpen(j),lv=jobLv(j.id),n=jobs[j.id]||0,nx=JOBLV[lv+1];
     const need=[P.age<jobAge(j)?`age ${jobAge(j)}`:'',j.rank>P.rank?RANKS[j.rank].n:'',eff(j.st)<j.req?`${j.req} ${STN[j.st]} (you have ${fmt(eff(j.st))})`:''].filter(Boolean).join(' and ');
     return `<div class="card ${open?'':'lock'}"><div class="t">${j.n}</div><div class="d">${j.d}</div>
@@ -223,7 +233,7 @@ function vPeople(){
     if(!p.alive)return `<div class="kv"><span>${p.name} <span class="dim sm">· ${relName(p)}</span></span><b class="dim sm">Died at ${p.age}</b></div>`;
     const b=[btn(p,'time','Spend time'),btn(p,'gift',`Gift ${gc}g`,P.gold>=gc)];
     if(p.kind!=='rival'&&P.age>=AGE_TRAIN)b.push(btn(p,'train',p.kind==='mentor'?'Learn':'Train together'));
-    if(p.kind==='rival'&&P.age>=AGE_FIGHT)b.push(`<button data-a="ppl" data-v="${p.id}:duel" data-ce="1" style="min-height:36px;padding:6px 8px;font-size:.72rem">Duel · 1 energy</button>`);
+    if(p.kind==='rival'&&P.age>=AGE_FIGHT)b.push(`<button data-a="ppl" data-v="${p.id}:duel" data-ce="1" style="min-height:36px;padding:6px 8px;font-size:.72rem">Duel · 1 AP</button>`);
     if(p.kind==='romance'&&P.age>=14)b.push(btn(p,'date','Ask out',p.bond>=40));
     if(p.kind==='partner')b.push(btn(p,'propose','Propose',P.age>=ADULT&&p.bond>=70));
     if(p.kind==='spouse'&&sp)b.push(btn(p,'child','Try for a child'));

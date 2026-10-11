@@ -16,7 +16,8 @@ A text-based fantasy progression RPG that runs in the browser. Roll your fate, t
 - **Rebirth:** end a life for Merit, which buys permanent upgrades; a codex rewards first-time discoveries
 - **Life simulation:** age up year by year (1x/5x/10x), life stages and race lifespans, yearly choice events, family, friends, rivals, mentors, romance, marriage, children, death and continuing as your heir
 - **Male or female characters**, with a romance preference setting
-- **Optional assists** in Settings (auto training, 2x gains, time skip, god mode). No paid features.
+- **Yearly activity budget:** 12 activity points per year (up to 15 with upgrades), no real-time timers. A saved routine (training, work, recovery and relationship upkeep) spends leftover points, and 5x/10x skips run it year by year, pausing when something happens. Long-lived races grow slower per year so lifetimes stay balanced
+- **Optional assists** in Settings (auto training, 2x gains, extra activity, god mode). No paid features.
 
 ## Project layout
 ```
@@ -35,7 +36,6 @@ build.sh                     joins src/ into index.html and dist/artifact.html
 Edit files in `src/`, then run `./build.sh`. JS files are concatenated in filename order and share one global scope.
 
 ## Roadmap
-- Rework the energy system
 - More life events
 - More regions and bosses
 - Character appearance customization
