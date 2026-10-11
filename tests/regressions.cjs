@@ -50,3 +50,17 @@ test('legacy reserve refunds also migrate at fate creation and only once',()=>{
   g.run('migrate()');
   assert.equal(g.run('S.merit'),280);
 });
+
+test('character names remain text in creation, death, history and inherited names',()=>{
+  const g=game();
+  g.run("S.fate.name='\"<!--&';S.P.name=S.fate.name;S.P.dead=true;say(S.P.name);recordLife();");
+  assert.match(g.run('vCreate()'),/value="&quot;&lt;!--&amp;"/);
+  for(const expr of ['vDeath()','vYou()','vLeg()']) {
+    const html=g.run(expr);
+    assert.ok(!html.includes('<!--'),expr);
+    assert.ok(html.includes('&lt;!--&amp;'),expr);
+  }
+  g.run("S.P.back='heir';S.P.backN='Heir of <!--';modal='reb';");
+  assert.ok(!g.run('vYou()').includes('<!--'));
+  assert.ok(!g.run('vModal()').includes('<!--'));
+});

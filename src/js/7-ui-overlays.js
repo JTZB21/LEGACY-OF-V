@@ -40,13 +40,13 @@ function vCombat(){
     <div class="btns"><button class="alt" data-a="leave">Continue</button>${C.kind==='region'&&C.over==='win'?`<button data-a="again" data-ce="1">Explore again · 1</button>`:''}</div>`;
   }
   const warn=INTW[f.intent];
-  return `<div class="unit"><div class="nm"><span>${f.n}</span><span class="cc num">CC ${f.cc}</span></div>
+  return `<div class="unit"><div class="nm"><span>${esc(f.n)}</span><span class="cc num">CC ${f.cc}</span></div>
     ${bar('',f.hp,f.max,'HP')}<div class="chips">${fc.map(chip).join('')}</div>
     ${!C.over?`<div class="intent ${warn?'warn':''}">Next: ${INTN[f.intent]}${f.intent==='unleash'?' (block or dodge!)':''}</div>`:''}</div>
-  <div class="unit"><div class="nm"><span>${P.name}</span><span class="cc num">CC ${combatClass()}</span></div>
+  <div class="unit"><div class="nm"><span>${esc(P.name)}</span><span class="cc num">CC ${combatClass()}</span></div>
     ${bar('',p.hp,p.max,'HP')}${bar('mp',p.mp,p.mmax,'Mana')}${bar('st',p.st,p.smax,'Stamina')}<div class="chips">${pc.map(chip).join('')}</div></div>
   ${body}
-  <div class="clog">${C.log.slice(0,8).map(l=>`<p>${l}</p>`).join('')}</div>`;
+  <div class="clog">${C.log.slice(0,8).map(l=>`<p>${esc(l)}</p>`).join('')}</div>`;
 }
 /* ---- mini-game view ---- */
 function vMG(){
@@ -95,9 +95,9 @@ function vEvent(){const P=S.P,e=EVENTS[P.ev];
   return `<div class="sm dim" style="text-align:center">AGE ${P.age} · ${stage().toUpperCase()}</div><div style="font-size:1.05rem;text-align:center;font-weight:600">${e.t}</div>
   ${e.c.map((c,i)=>`<button data-a="evc" data-v="${i}">${c[0]}</button>`).join('')}`}
 function vDeath(){const P=S.P,h=heirs(),m=rebirthMerit();
-  return `<h2>${P.name} has died</h2><div class="d">Died at age ${P.age} as ${RANKS[P.rank].n}, Combat Class ${combatClass()}. This life earns <b style="color:var(--fg)">${m} Merit</b>.</div>
+  return `<h2>${esc(P.name)} has died</h2><div class="d">Died at age ${P.age} as ${RANKS[P.rank].n}, Combat Class ${combatClass()}. This life earns <b style="color:var(--fg)">${m} Merit</b>.</div>
   ${h.length?`<div class="sm" style="text-align:center;color:var(--gold2)">Continue the bloodline as an heir. They inherit half your gold, your gear and your training grounds.</div>
-  ${h.map(k=>`<button data-a="heir" data-v="${k.id}">${k.name}, age ${k.age} · ${byId(RACES,k.race).n} · <span style="color:${rc(byId(MAGICS,k.mag).r)}">${byId(MAGICS,k.mag).n}</span></button>`).join('')}`:'<div class="d">You leave no heirs.</div>'}
+  ${h.map(k=>`<button data-a="heir" data-v="${k.id}">${esc(k.name)}, age ${k.age} · ${byId(RACES,k.race).n} · <span style="color:${rc(byId(MAGICS,k.mag).r)}">${byId(MAGICS,k.mag).n}</span></button>`).join('')}`:'<div class="d">You leave no heirs.</div>'}
   <button class="alt" data-a="newlife">Begin a new life (roll fate)</button>`}
 /* ---- modals ---- */
 function vModal(){
@@ -115,7 +115,7 @@ function vModal(){
     <button data-a="yearend" data-v="use">Use them on my routine</button><button class="alt" data-a="yearend" data-v="always">Always use routine (don't ask again)</button>
     <button class="alt" data-a="yearend" data-v="skip">Age up without them</button><button class="ghost" data-a="close">Cancel</button>`}
   if(modal==='legacy')return `<h2>Merit upgrades</h2><div class="d">You have ${S.merit} Merit.</div>${legacyList()}<button class="alt" data-a="close">Close</button>`;
-  if(modal==='reb')return `<h2>End this life?</h2><div class="d">${S.P.name}'s story ends here. You carry ${rebirthMerit()} Merit, your upgrades and your codex into a new life. Stats, gold, gear and rank reset.</div>
+  if(modal==='reb')return `<h2>End this life?</h2><div class="d">${esc(S.P.name)}'s story ends here. You carry ${rebirthMerit()} Merit, your upgrades and your codex into a new life. Stats, gold, gear and rank reset.</div>
     <div class="btns"><button class="alt" data-a="close">Keep living</button><button data-a="dorebirth">Rebirth</button></div>`;
   if(modal==='settings')return `<h2>Settings</h2>
     <div class="d">Assists are optional and free. They replace paid passes and are off by default.</div>
