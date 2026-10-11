@@ -170,8 +170,8 @@ function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r
 function migrate(){
   if(S.fate&&!S.fate.gender)S.fate.gender='Male';
   if(S.rtMode==null)S.rtMode='ask';
+  if((S.lp.reserve||0)>3){let r=0;for(let l=4;l<=S.lp.reserve;l++)r+=20*l;S.merit+=r;S.lp.reserve=3;S.refund=r}
   const P=S.P;if(!P)return;
   if(P.age==null){P.age=ADULT;P.gender=P.gender||'Male';P.life=rollLife(P.race);P.gen=1;P.acts=4;P.dead=false;P.ev=null;makeFamily(P);P.people.forEach(p=>p.age+=ADULT)}
   if(P.rt==null){P.rt=defaultRoutine();P.energy=P.age>=AGE_TRAIN?maxEnergy():0;delete P.ectr;delete P.drill}
-  if((S.lp.reserve||0)>3){let r=0;for(let l=4;l<=S.lp.reserve;l++)r+=20*l;S.merit+=r;S.lp.reserve=3;S.refund=r}
 }

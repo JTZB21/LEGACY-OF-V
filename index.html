@@ -601,10 +601,10 @@ function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r
 function migrate(){
   if(S.fate&&!S.fate.gender)S.fate.gender='Male';
   if(S.rtMode==null)S.rtMode='ask';
+  if((S.lp.reserve||0)>3){let r=0;for(let l=4;l<=S.lp.reserve;l++)r+=20*l;S.merit+=r;S.lp.reserve=3;S.refund=r}
   const P=S.P;if(!P)return;
   if(P.age==null){P.age=ADULT;P.gender=P.gender||'Male';P.life=rollLife(P.race);P.gen=1;P.acts=4;P.dead=false;P.ev=null;makeFamily(P);P.people.forEach(p=>p.age+=ADULT)}
   if(P.rt==null){P.rt=defaultRoutine();P.energy=P.age>=AGE_TRAIN?maxEnergy():0;delete P.ectr;delete P.drill}
-  if((S.lp.reserve||0)>3){let r=0;for(let l=4;l<=S.lp.reserve;l++)r+=20*l;S.merit+=r;S.lp.reserve=3;S.refund=r}
 }
 /* ===== LIFE SIM ===== */
 const AGE_TRAIN=3,AGE_FIGHT=6,AGE_WORK=10,AGE_TRIAL=12,ADULT=18;
@@ -1496,7 +1496,7 @@ document.addEventListener('click',e=>{
     case 'exp':{const code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));$('sv').value=code;$('sv').select();
       try{navigator.clipboard.writeText(code).then(()=>$('svMsg').textContent='Copied to clipboard.').catch(()=>{$('svMsg').textContent='Select the code and copy it.'})}catch(x){$('svMsg').textContent='Select the code and copy it.'}
       return}
-    case 'imp':try{const o=JSON.parse(decodeURIComponent(escape(atob($('sv').value.trim()))));if(!o||o.v!==3)throw 0;S=o;S.assist=S.assist||{};C=null;MG=null;modal=null;save()}catch(x){$('svMsg').textContent='That code did not work. Check it was copied in full.';return}break;
+    case 'imp':try{const o=JSON.parse(decodeURIComponent(escape(atob($('sv').value.trim()))));if(!o||o.v!==3)throw 0;S=o;S.assist=S.assist||{};migrate();C=null;MG=null;modal=null;save()}catch(x){$('svMsg').textContent='That code did not work. Check it was copied in full.';return}break;
     case 'reset':if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to erase everything';return}
       try{localStorage.removeItem(KEY)}catch(x){}freshSave();C=null;MG=null;modal=null;tab='you';break;
   }
