@@ -37,5 +37,5 @@ Edit files in `src/`, then run `./build.sh`. JS files are concatenated in filena
 ## Roadmap
 - Rework the energy system
 - More life events
-- More magics (goal: 40+), regions and bosses
+- More regions and bosses
 - Character appearance customization
